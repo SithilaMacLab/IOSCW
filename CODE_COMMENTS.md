@@ -40,6 +40,21 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **ExpenseRepository.swift**: `ExpenseDraft` holds everything the form collects. `exchangeRate` is 1 for LKR; the currency-conversion step fills it in later.
 - **BudgetRepository.swift**: `setLimit` creates the category's budget or changes the limit if it already has one.
 - **AuthServiceProtocol.swift**: screens depend on this protocol rather than Firebase directly, so unit tests can use a mock.
+- **FirebaseAuthService.swift**: the whole file is wrapped in `#if canImport(FirebaseAuth)`, so the project still builds before the Firebase package is added. `configureIfPossible()` only calls `FirebaseApp.configure()` when `GoogleService-Info.plist` is in the app, otherwise the app would crash on launch. Firebase keeps the user signed in across launches by itself. Wrong password, unknown user and invalid credential all map to one "email or password is incorrect" message, so the app never reveals which emails have accounts.
+- **DevAuthService.swift**: stand-in used when Firebase is not available (no package or no plist), and in previews. It accepts any valid email and password and only remembers the email in UserDefaults. It is for development only and never talks to a server.
+- **AuthServiceFactory.swift**: picks Firebase when it is set up, otherwise the dev service.
+- **AuthError.swift**: friendly messages shown on the sign-in screens.
+- **BiometricAuthenticator.swift**: uses the `deviceOwnerAuthentication` policy, which means Face ID or Touch ID with the device passcode as the fallback. `unavailable` means the phone has no passcode or biometrics set up. `cancelled` covers the user tapping Cancel and the system interrupting the prompt (for example when the app moves to the background).
+- **Info.plist**: `INFOPLIST_KEY_NSFaceIDUsageDescription` was added to both build configurations in the project file. Without it iOS will not allow Face ID.
+
+## Auth and lock
+
+- **AuthValidator.swift**: pure checks (email shape, password of 8 or more characters with a letter and a number), easy to unit test.
+- **AuthViewModel.swift**: forms keep their own fields; the view model only holds the signed-in state, a working flag and the error or info message. Messages are cleared when a screen appears.
+- **AppLockViewModel.swift**: starts locked on launch if the lock is on. The app locks when it moves to the background, and the lock screen asks for Face ID again when the app becomes active. Turning the lock on or off asks for Face ID first, so someone holding an unlocked phone cannot switch it off. If the phone loses its passcode while the lock is on, the lock turns itself off so the user is never stuck outside the app.
+- **RootView.swift**: shows the welcome screens when signed out and the tab bar when signed in. The lock screen is drawn over the tab bar, which is hidden from VoiceOver while locked. `PrivacyCoverView` hides the app contents in the app switcher when the lock is on. Signing in or out releases the lock so a fresh sign-in is never followed by a lock prompt.
+- **LockScreenView.swift**: asks for Face ID automatically when it appears and the app is active, and has a button to try again.
+- **WelcomeView.swift**, **LoginView.swift**, **RegisterView.swift**, **ForgotPasswordView.swift**: each screen keeps its own text fields. The reset message is the same whether or not the email has an account.
 
 ## View models and screens
 
@@ -51,5 +66,6 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **CategoriesView.swift**: pushed from Settings, so it has no NavigationStack of its own.
 - **CategoryFormView.swift**: colour and icon are picked from fixed grids.
 - **DashboardView.swift**: the category legend shows icon, name and amount, so nothing depends on colour alone.
-- **SettingsView.swift**: the "Load sample data" button is in debug builds only.
+- **SettingsView.swift**: the "Load sample data" button is in debug builds only. Signing out asks for confirmation. Signing out keeps the data already on the phone; tying records to a user belongs to the sync step.
 - **ContentView.swift**: the iPhone tab bar. The iPad sidebar (NavigationSplitView) comes in the final polish stage.
+- **AppContainer.swift**: now also holds the auth service.

@@ -25,4 +25,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView(container: .preview())
+        .environmentObject(AuthViewModel(service: DevAuthService()))
+        .environmentObject(AppLockViewModel())
 }

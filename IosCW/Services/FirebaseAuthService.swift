@@ -1,0 +1,67 @@
+#if canImport(FirebaseAuth)
+import FirebaseAuth
+import FirebaseCore
+import Foundation
+
+enum FirebaseBootstrap {
+    static func configureIfPossible() -> Bool {
+        if FirebaseApp.app() != nil { return true }
+        guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else { return false }
+        FirebaseApp.configure()
+        return true
+    }
+}
+
+final class FirebaseAuthService: AuthServiceProtocol {
+    var isSignedIn: Bool { Auth.auth().currentUser != nil }
+
+    var currentUserEmail: String? { Auth.auth().currentUser?.email }
+
+    func register(email: String, password: String) async throws {
+        do {
+            _ = try await Auth.auth().createUser(withEmail: email, password: password)
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
+    func signIn(email: String, password: String) async throws {
+        do {
+            _ = try await Auth.auth().signIn(withEmail: email, password: password)
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
+    func signOut() throws {
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
+    func resetPassword(email: String) async throws {
+        do {
+            try await Auth.auth().sendPasswordReset(withEmail: email)
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
+    private static func map(_ error: Error) -> AuthError {
+        let nsError = error as NSError
+        guard let code = AuthErrorCode.Code(rawValue: nsError.code) else {
+            return .unknown(error.localizedDescription)
+        }
+        switch code {
+        case .invalidEmail: return .invalidEmail
+        case .weakPassword: return .weakPassword
+        case .emailAlreadyInUse: return .emailAlreadyInUse
+        case .wrongPassword, .userNotFound, .invalidCredential: return .wrongCredentials
+        case .networkError: return .network
+        default: return .unknown(error.localizedDescription)
+        }
+    }
+}
+#endif

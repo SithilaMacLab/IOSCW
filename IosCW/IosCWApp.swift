@@ -6,7 +6,7 @@ struct IosCWApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(container: container)
+            RootView(container: container)
         }
     }
 }
