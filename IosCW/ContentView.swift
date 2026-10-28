@@ -1,24 +1,28 @@
-//
-//  ContentView.swift
-//  IosCW
-//
-//  Created by Student2 on 2026-10-21.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    let container: AppContainer
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            DashboardView(container: container)
+                .tabItem { Label("Dashboard", systemImage: "chart.pie") }
+
+            ActivityView(container: container)
+                .tabItem { Label("Activity", systemImage: "list.bullet") }
+
+            BudgetsView(container: container)
+                .tabItem { Label("Budgets", systemImage: "target") }
+
+            ForecastView()
+                .tabItem { Label("Forecast", systemImage: "chart.line.uptrend.xyaxis") }
+
+            SettingsView(container: container)
+                .tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .padding()
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(container: .preview())
 }
