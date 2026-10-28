@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 struct ActivityView: View {
@@ -5,6 +6,11 @@ struct ActivityView: View {
     @StateObject private var viewModel: ActivityViewModel
     @State private var showingAdd = false
     @State private var showingFilter = false
+    @State private var showingScanner = false
+    @State private var showingPhotoPicker = false
+    @State private var photoSelection: PhotosPickerItem?
+    @State private var pendingImages: [UIImage]?
+    @State private var scannedReceipt: ScannedReceipt?
     @State private var editing: Expense?
 
     init(container: AppContainer) {
@@ -45,8 +51,25 @@ struct ActivityView: View {
                               ? "line.3.horizontal.decrease.circle.fill"
                               : "line.3.horizontal.decrease.circle")
                     }
-                    Button {
-                        showingAdd = true
+                    Menu {
+                        Button {
+                            showingAdd = true
+                        } label: {
+                            Label("Add manually", systemImage: "square.and.pencil")
+                        }
+
+                        Button {
+                            showingScanner = true
+                        } label: {
+                            Label("Scan a receipt", systemImage: "doc.viewfinder")
+                        }
+                        .disabled(!DocumentScannerView.isSupported)
+
+                        Button {
+                            showingPhotoPicker = true
+                        } label: {
+                            Label("Choose a receipt photo", systemImage: "photo")
+                        }
                     } label: {
                         Label("Add transaction", systemImage: "plus")
                     }
@@ -54,6 +77,27 @@ struct ActivityView: View {
             }
             .sheet(isPresented: $showingAdd) {
                 ExpenseFormView(container: container)
+            }
+            .fullScreenCover(isPresented: $showingScanner, onDismiss: openPendingScan) {
+                DocumentScannerView(
+                    onFinish: { images in
+                        pendingImages = images
+                        showingScanner = false
+                    },
+                    onCancel: { showingScanner = false },
+                    onError: { _ in
+                        showingScanner = false
+                        viewModel.errorMessage = "The camera couldn't scan that receipt."
+                    })
+                .ignoresSafeArea()
+            }
+            .photosPicker(isPresented: $showingPhotoPicker, selection: $photoSelection, matching: .images)
+            .onChange(of: photoSelection) { _, item in
+                guard let item else { return }
+                Task { await loadPhoto(item) }
+            }
+            .sheet(item: $scannedReceipt) { receipt in
+                ReceiptFlowView(container: container, images: receipt.images)
             }
             .sheet(item: $editing) { expense in
                 ExpenseFormView(container: container, editing: expense)
@@ -110,6 +154,22 @@ struct ActivityView: View {
                 Button("Clear search and filters") { viewModel.filter = ExpenseFilter() }
             }
         }
+    }
+
+    private func openPendingScan() {
+        guard let images = pendingImages, !images.isEmpty else { return }
+        pendingImages = nil
+        scannedReceipt = ScannedReceipt(images: images)
+    }
+
+    private func loadPhoto(_ item: PhotosPickerItem) async {
+        defer { photoSelection = nil }
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let image = UIImage(data: data) else {
+            viewModel.errorMessage = "That photo couldn't be opened."
+            return
+        }
+        scannedReceipt = ScannedReceipt(images: [image])
     }
 
     private var errorBinding: Binding<Bool> {

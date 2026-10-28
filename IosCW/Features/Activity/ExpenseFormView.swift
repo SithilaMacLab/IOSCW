@@ -4,17 +4,22 @@ struct ExpenseFormView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: ExpenseFormViewModel
 
-    init(container: AppContainer, editing: Expense? = nil) {
+    init(container: AppContainer, editing: Expense? = nil, prefill: ReceiptPrefill? = nil) {
         _viewModel = StateObject(wrappedValue: ExpenseFormViewModel(
             expenses: container.expenses,
             categories: container.categories,
             rates: container.rates,
-            editing: editing))
+            editing: editing,
+            prefill: prefill))
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                if let thumbnail = viewModel.receiptThumbnail {
+                    receiptSection(thumbnail)
+                }
+
                 Section {
                     Picker("Type", selection: $viewModel.type) {
                         ForEach(TransactionType.allCases) { type in
@@ -25,30 +30,39 @@ struct ExpenseFormView: View {
                 }
 
                 Section("Details") {
-                    HStack {
-                        Picker("Currency", selection: $viewModel.currencyCode) {
-                            ForEach(viewModel.currencies) { currency in
-                                Text("\(currency.code) · \(currency.name)").tag(currency.code)
+                    flaggable([ReviewHint(.amount, "Check the amount"),
+                               ReviewHint(.currency, "Check the currency")]) {
+                        HStack {
+                            Picker("Currency", selection: $viewModel.currencyCode) {
+                                ForEach(viewModel.currencies) { currency in
+                                    Text("\(currency.code) · \(currency.name)").tag(currency.code)
+                                }
                             }
-                        }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
+                            .pickerStyle(.menu)
+                            .labelsHidden()
 
-                        TextField("0.00", text: $viewModel.amountText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .accessibilityLabel("Amount")
+                            TextField("0.00", text: $viewModel.amountText)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .accessibilityLabel("Amount")
+                        }
                     }
 
-                    DatePicker("Date", selection: $viewModel.date, displayedComponents: .date)
+                    flaggable([ReviewHint(.date, "Check the date")]) {
+                        DatePicker("Date", selection: $viewModel.date, displayedComponents: .date)
+                    }
 
-                    TextField("Merchant", text: $viewModel.merchant)
+                    flaggable([ReviewHint(.merchant, "Check the merchant name")]) {
+                        TextField("Merchant", text: $viewModel.merchant)
+                    }
 
-                    Picker("Category", selection: $viewModel.categoryID) {
-                        Text("None").tag(UUID?.none)
-                        ForEach(viewModel.categories) { category in
-                            Label(category.name, systemImage: category.iconName)
-                                .tag(UUID?.some(category.id))
+                    flaggable([ReviewHint(.category, "Pick or confirm a category")]) {
+                        Picker("Category", selection: $viewModel.categoryID) {
+                            Text("None").tag(UUID?.none)
+                            ForEach(viewModel.categories) { category in
+                                Label(category.name, systemImage: category.iconName)
+                                    .tag(UUID?.some(category.id))
+                            }
                         }
                     }
                 }
@@ -62,7 +76,7 @@ struct ExpenseFormView: View {
                         .lineLimit(1...4)
                 }
             }
-            .navigationTitle(viewModel.isEditing ? "Edit transaction" : "New transaction")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -85,6 +99,65 @@ struct ExpenseFormView: View {
                 Text(viewModel.errorMessage ?? "")
             }
         }
+    }
+
+    private var title: String {
+        if viewModel.isEditing { return "Edit transaction" }
+        return viewModel.isFromReceipt ? "Review receipt" : "New transaction"
+    }
+
+    private func receiptSection(_ thumbnail: UIImage) -> some View {
+        Section {
+            Image(uiImage: thumbnail)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .accessibilityLabel("Scanned receipt")
+
+            if viewModel.flagged.isEmpty {
+                Label("Everything looks right. Check it and save.", systemImage: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+            } else {
+                Label(flaggedSummary, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+        } header: {
+            Text("Scanned receipt")
+        } footer: {
+            Text("Read on this phone. Fields marked with a warning were hard to read, so please check them.")
+        }
+    }
+
+    private var flaggedSummary: String {
+        let count = viewModel.flagged.count
+        return "Please check \(count) \(count == 1 ? "field" : "fields") marked below."
+    }
+
+    private struct ReviewHint: Identifiable {
+        let field: ReviewField
+        let text: String
+
+        var id: String { text }
+
+        init(_ field: ReviewField, _ text: String) {
+            self.field = field
+            self.text = text
+        }
+    }
+
+    private func flaggable<Content: View>(_ hints: [ReviewHint],
+                                          @ViewBuilder content: () -> Content) -> some View {
+        let active = hints.filter { viewModel.flagged.contains($0.field) }
+        return VStack(alignment: .leading, spacing: 4) {
+            content()
+            ForEach(active) { hint in
+                Label(hint.text, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .listRowBackground(active.isEmpty ? Color(.secondarySystemGroupedBackground) : Color.orange.opacity(0.15))
     }
 
     @ViewBuilder

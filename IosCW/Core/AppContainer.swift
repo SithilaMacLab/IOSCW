@@ -5,6 +5,7 @@ final class AppContainer {
     let auth: AuthServiceProtocol
     let rates: ExchangeRateServiceProtocol
     let network: NetworkMonitor
+    let recognizer: TextRecognizing
     let categories: CategoryRepositoryProtocol
     let expenses: ExpenseRepositoryProtocol
     let budgets: BudgetRepositoryProtocol
@@ -14,11 +15,13 @@ final class AppContainer {
          auth: AuthServiceProtocol,
          rates: ExchangeRateServiceProtocol = CachedExchangeRateService(),
          remote: RemoteStoreProtocol? = nil,
-         network: NetworkMonitor = NetworkMonitor()) {
+         network: NetworkMonitor = NetworkMonitor(),
+         recognizer: TextRecognizing = VisionTextRecognizer()) {
         self.persistence = persistence
         self.auth = auth
         self.rates = rates
         self.network = network
+        self.recognizer = recognizer
         categories = CoreDataCategoryRepository(persistence: persistence)
         expenses = CoreDataExpenseRepository(persistence: persistence)
         budgets = CoreDataBudgetRepository(persistence: persistence)

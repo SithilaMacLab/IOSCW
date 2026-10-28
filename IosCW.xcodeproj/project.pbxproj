@@ -253,6 +253,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Pocketlens uses the camera to scan your receipts. Photos are read on this phone and never uploaded.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pocketlens uses Face ID to keep your financial data private.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -285,6 +286,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Pocketlens uses the camera to scan your receipts. Photos are read on this phone and never uploaded.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pocketlens uses Face ID to keep your financial data private.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

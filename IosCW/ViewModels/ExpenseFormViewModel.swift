@@ -1,5 +1,5 @@
 import Combine
-import Foundation
+import UIKit
 
 enum RateState: Equatable {
     case notNeeded
@@ -10,18 +10,30 @@ enum RateState: Equatable {
 
 final class ExpenseFormViewModel: ObservableObject {
     @Published var type: TransactionType = .expense
-    @Published var amountText = ""
-    @Published var date = Date()
-    @Published var merchant = ""
+    @Published var amountText = "" {
+        didSet { if amountText != oldValue { flagged.remove(.amount) } }
+    }
+    @Published var date = Date() {
+        didSet { if date != oldValue { flagged.remove(.date) } }
+    }
+    @Published var merchant = "" {
+        didSet { if merchant != oldValue { flagged.remove(.merchant) } }
+    }
     @Published var note = ""
-    @Published var categoryID: UUID?
-    @Published var currencyCode: String
+    @Published var categoryID: UUID? {
+        didSet { if categoryID != oldValue { flagged.remove(.category) } }
+    }
+    @Published var currencyCode: String {
+        didSet { if currencyCode != oldValue { flagged.remove(.currency) } }
+    }
     @Published var manualRateText = ""
     @Published private(set) var rateState: RateState
+    @Published private(set) var flagged: Set<ReviewField> = []
     @Published var errorMessage: String?
 
     let categories: [ExpenseCategory]
     let currencies: [Currency]
+    let receiptThumbnail: UIImage?
     private let editing: Expense?
     private let repository: ExpenseRepositoryProtocol
     private let rates: ExchangeRateServiceProtocol
@@ -29,13 +41,15 @@ final class ExpenseFormViewModel: ObservableObject {
     init(expenses: ExpenseRepositoryProtocol,
          categories: CategoryRepositoryProtocol,
          rates: ExchangeRateServiceProtocol,
-         editing: Expense? = nil) {
+         editing: Expense? = nil,
+         prefill: ReceiptPrefill? = nil) {
         repository = expenses
         self.rates = rates
         self.categories = categories.fetchAll()
         self.editing = editing
+        receiptThumbnail = prefill?.thumbnail
 
-        let code = editing?.currencyCode ?? AppConstants.baseCurrencyCode
+        let code = editing?.currencyCode ?? prefill?.currencyCode ?? AppConstants.baseCurrencyCode
         currencyCode = code
 
         var list = Currency.supported
@@ -49,6 +63,8 @@ final class ExpenseFormViewModel: ObservableObject {
                                             rateToLKR: editing.exchangeRate,
                                             asOf: editing.date,
                                             source: .stored))
+        } else if code != AppConstants.baseCurrencyCode {
+            rateState = .loading
         } else {
             rateState = .notNeeded
         }
@@ -60,12 +76,22 @@ final class ExpenseFormViewModel: ObservableObject {
             merchant = editing.merchant
             note = editing.note
             categoryID = editing.category?.id
+        } else if let prefill {
+            merchant = prefill.merchant
+            amountText = prefill.amount.map {
+                $0.formatted(.number.grouping(.never).precision(.fractionLength(2)))
+            } ?? ""
+            date = prefill.date
+            categoryID = prefill.categoryID
+            flagged = prefill.flagged
         }
     }
 
     var isEditing: Bool { editing != nil }
 
     var isForeign: Bool { currencyCode != AppConstants.baseCurrencyCode }
+
+    var isFromReceipt: Bool { receiptThumbnail != nil }
 
     var amount: Double? {
         Self.parse(amountText)
