@@ -8,6 +8,7 @@ struct ExpenseFormView: View {
         _viewModel = StateObject(wrappedValue: ExpenseFormViewModel(
             expenses: container.expenses,
             categories: container.categories,
+            rates: container.rates,
             editing: editing))
     }
 
@@ -25,8 +26,14 @@ struct ExpenseFormView: View {
 
                 Section("Details") {
                     HStack {
-                        Text(viewModel.currencyCode)
-                            .foregroundStyle(.secondary)
+                        Picker("Currency", selection: $viewModel.currencyCode) {
+                            ForEach(viewModel.currencies) { currency in
+                                Text("\(currency.code) · \(currency.name)").tag(currency.code)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+
                         TextField("0.00", text: $viewModel.amountText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
@@ -44,6 +51,10 @@ struct ExpenseFormView: View {
                                 .tag(UUID?.some(category.id))
                         }
                     }
+                }
+
+                if viewModel.isForeign {
+                    rateSection
                 }
 
                 Section("Note") {
@@ -64,12 +75,97 @@ struct ExpenseFormView: View {
                     .disabled(!viewModel.canSave)
                 }
             }
+            .task { await viewModel.currencyDidChange() }
+            .onChange(of: viewModel.currencyCode) { _, _ in
+                Task { await viewModel.currencyDidChange() }
+            }
             .alert("Couldn't save", isPresented: errorBinding) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
         }
+    }
+
+    @ViewBuilder
+    private var rateSection: some View {
+        Section {
+            switch viewModel.rateState {
+            case .notNeeded:
+                EmptyView()
+
+            case .loading:
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Getting the latest rate…")
+                        .foregroundStyle(.secondary)
+                }
+
+            case .ready(let rate):
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("1 \(rate.currencyCode) = \(rate.rateToLKR.formatted(.number.precision(.fractionLength(2...4)))) LKR")
+                        .font(.body.monospacedDigit())
+                    sourceLabel(for: rate)
+                }
+                convertedRow
+
+            case .unavailable:
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("No saved rate and no connection.", systemImage: "wifi.slash")
+                        .foregroundStyle(.orange)
+                    HStack {
+                        Text("1 \(viewModel.currencyCode) =")
+                        TextField("LKR", text: $viewModel.manualRateText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Exchange rate to LKR")
+                        Text("LKR")
+                    }
+                    Button("Try again") {
+                        Task { await viewModel.currencyDidChange() }
+                    }
+                }
+                convertedRow
+            }
+        } header: {
+            Text("Exchange rate")
+        } footer: {
+            Text("Converted to LKR when you save. Rates by ExchangeRate-API.")
+        }
+    }
+
+    @ViewBuilder
+    private var convertedRow: some View {
+        if let converted = viewModel.convertedLKR {
+            LabeledContent("Counted as", value: CurrencyFormatter.lkr(converted))
+        }
+    }
+
+    private func sourceLabel(for rate: ExchangeRate) -> some View {
+        Group {
+            switch rate.source {
+            case .live:
+                Label {
+                    Text("Updated \(rate.asOf, style: .relative) ago")
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                }
+                .foregroundStyle(.green)
+
+            case .cached:
+                Label {
+                    Text("Offline: saved rate from \(rate.asOf, style: .relative) ago")
+                } icon: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .foregroundStyle(.orange)
+
+            case .stored:
+                Label("Rate saved with this transaction", systemImage: "lock.fill")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
     }
 
     private var errorBinding: Binding<Bool> {

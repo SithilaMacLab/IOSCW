@@ -4,6 +4,7 @@ struct SettingsView: View {
     let container: AppContainer
     @EnvironmentObject private var session: AuthViewModel
     @EnvironmentObject private var lock: AppLockViewModel
+    @EnvironmentObject private var sync: SyncEngine
     @State private var loadedSamples = false
     @State private var confirmingSignOut = false
 
@@ -50,6 +51,41 @@ struct SettingsView: View {
                     Text("Locks the app when you open it and when you return to it. Your device passcode works as a fallback.")
                 }
 
+                Section {
+                    LabeledContent("Status", value: sync.statusText)
+
+                    if sync.pendingCount > 0 {
+                        LabeledContent("Waiting to upload", value: "\(sync.pendingCount)")
+                    }
+
+                    if let last = sync.lastSyncedAt {
+                        LabeledContent("Last synced") {
+                            Text("\(last, style: .relative) ago")
+                        }
+                    }
+
+                    if case .failed(let message) = sync.status {
+                        Label(message, systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+
+                    Button {
+                        sync.syncNow()
+                    } label: {
+                        Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .disabled(!sync.canSync)
+                } header: {
+                    Text("Cloud sync")
+                } footer: {
+                    if case .notConfigured = sync.status {
+                        Text("Add the Firebase Firestore package to turn on cloud sync. Until then everything is saved on this phone only.")
+                    } else {
+                        Text("Changes save on this phone first and upload automatically when you're online.")
+                    }
+                }
+
                 Section("Data") {
                     Text("Export CSV")
                     Text("Delete account and data")
@@ -83,7 +119,9 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(container: .preview(withSamples: false))
+    let container = AppContainer.preview(withSamples: false)
+    return SettingsView(container: container)
         .environmentObject(AuthViewModel(service: DevAuthService()))
         .environmentObject(AppLockViewModel())
+        .environmentObject(container.sync)
 }

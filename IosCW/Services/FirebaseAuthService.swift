@@ -1,21 +1,13 @@
 #if canImport(FirebaseAuth)
 import FirebaseAuth
-import FirebaseCore
 import Foundation
-
-enum FirebaseBootstrap {
-    static func configureIfPossible() -> Bool {
-        if FirebaseApp.app() != nil { return true }
-        guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else { return false }
-        FirebaseApp.configure()
-        return true
-    }
-}
 
 final class FirebaseAuthService: AuthServiceProtocol {
     var isSignedIn: Bool { Auth.auth().currentUser != nil }
 
     var currentUserEmail: String? { Auth.auth().currentUser?.email }
+
+    var currentUserID: String? { Auth.auth().currentUser?.uid }
 
     func register(email: String, password: String) async throws {
         do {

@@ -12,6 +12,8 @@ final class DevAuthService: AuthServiceProtocol {
 
     var currentUserEmail: String? { defaults.string(forKey: key) }
 
+    var currentUserID: String? { currentUserEmail }
+
     func register(email: String, password: String) async throws {
         try validate(email: email, password: password)
         defaults.set(AuthValidator.normalized(email), forKey: key)

@@ -8,6 +8,10 @@ struct ExpenseRowView: View {
         return expense.category?.name ?? expense.type.title
     }
 
+    private var isForeign: Bool {
+        expense.currencyCode != AppConstants.baseCurrencyCode
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             CategoryIcon(iconName: expense.category?.iconName ?? "questionmark.circle.fill",
@@ -23,9 +27,16 @@ struct ExpenseRowView: View {
 
             Spacer()
 
-            Text(amountText)
-                .font(.body.monospacedDigit())
-                .foregroundStyle(expense.type == .income ? Color.green : Color.primary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(amountText)
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(expense.type == .income ? Color.green : Color.primary)
+                if isForeign {
+                    Text(expense.amount.formatted(.currency(code: expense.currencyCode)))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)

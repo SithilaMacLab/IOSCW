@@ -20,11 +20,16 @@ struct ContentView: View {
             SettingsView(container: container)
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            SyncBannerView()
+        }
     }
 }
 
 #Preview {
-    ContentView(container: .preview())
+    let container = AppContainer.preview()
+    return ContentView(container: container)
         .environmentObject(AuthViewModel(service: DevAuthService()))
         .environmentObject(AppLockViewModel())
+        .environmentObject(container.sync)
 }

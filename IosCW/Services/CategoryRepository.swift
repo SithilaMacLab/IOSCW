@@ -92,14 +92,15 @@ final class CoreDataCategoryRepository: CategoryRepositoryProtocol {
 
         for item in Self.defaults {
             let category = ExpenseCategory(context: context)
-            category.id = UUID()
+            category.id = UUID.deterministic(from: "pocketlens.default.\(item.name)")
             category.name = item.name
             category.iconName = item.icon
             category.colorHex = item.color
             category.isDefault = true
-            category.markEdited()
+            category.lastEdited = Date(timeIntervalSince1970: 0)
+            category.syncState = .synced
         }
-        try persistence.save()
+        try persistence.save(notify: false)
     }
 
     private func validatedName(_ name: String, excluding current: ExpenseCategory?) throws -> String {

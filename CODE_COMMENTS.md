@@ -68,4 +68,34 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **DashboardView.swift**: the category legend shows icon, name and amount, so nothing depends on colour alone.
 - **SettingsView.swift**: the "Load sample data" button is in debug builds only. Signing out asks for confirmation. Signing out keeps the data already on the phone; tying records to a user belongs to the sync step.
 - **ContentView.swift**: the iPhone tab bar. The iPad sidebar (NavigationSplitView) comes in the final polish stage.
-- **AppContainer.swift**: now also holds the auth service.
+- **AppContainer.swift**: also holds the auth service, the exchange-rate service, the network monitor and the sync engine. The remote store is optional: without the Firestore package it is nil and sync stays off.
+
+## Currency conversion
+
+- **ExchangeRateService.swift**: uses the free open.er-api.com endpoint, which lists LKR and needs no key. One USD-based table is downloaded and cached in UserDefaults. A table younger than 12 hours is used without a network call. If the download fails, the old table is used and the rate is marked as cached (shown as "Offline: saved rate"). With no cache and no connection the form lets the user type a rate by hand. The free plan updates once a day and requires the "Rates by ExchangeRate-API" attribution, which the form shows.
+- **ExchangeRateModels.swift**: `CurrencyConverter` converts through the table, so any pair works: LKR per unit = LKR per USD divided by code per USD. `RateSource` is `live` (fresh), `cached` (stale because offline) or `stored` (the rate saved with an existing transaction).
+- **ExpenseFormViewModel.swift**: editing a foreign transaction keeps its saved rate until the currency changes, so old records never move. `canSave` also needs a usable rate. Only the amount in the paid currency is typed; the LKR value is `amount * rate` and is stored with the rate.
+- **StaticExchangeRateService**: fixed rates for previews and tests.
+- **Currency.swift**: the list offered in the picker. A transaction in a currency outside the list still shows its own currency when edited.
+
+## Offline sync
+
+- **Model**: each record carries an id, a last-edited time, a sync state (pending or synced) and a deleted marker. The phone is the source of truth; Firestore is a copy.
+- **SyncRecord.swift** and **SyncMapper.swift**: the plain form of a record that travels to the server. Relationships travel as the category's id. Categories sync first, then budgets, then expenses, so links can be resolved.
+- **SyncEngine.swift**:
+  - Push: sends every pending record in batches of 400 (Firestore's limit is 500). A record is only marked synced if it was not edited again while the upload was running. A deleted record is removed from the phone only after the server has received the deletion; the deletion marker stays on the server so other devices learn about it.
+  - Pull: asks for records edited since the last pull, per record type and per user. If the same record was edited in two places, the most recent last-edited time wins. Equal times keep the local copy. The last-pull time only moves forward after the changes are saved.
+  - Triggers: the network coming back, the app becoming active, any local change (after a 2 second pause), and the Sync now button. Own saves during a sync are ignored so there is no loop.
+  - Failure: status becomes "Sync problem" and a retry is scheduled after 5 seconds, then 15, 45, 135 and at most 300 seconds. A success resets the delay.
+  - Up to 3 push-and-pull passes run in a row so edits made during a sync are not left waiting.
+  - Local data belongs to one user. The user id is remembered; if a different user signs in, the local data is wiped and replaced from the cloud. The first user to sign in on a phone keeps the data already on it.
+  - Times come from each phone's clock, so a phone with a badly wrong clock can win or lose conflicts unfairly.
+- **CategoryRepository.swift**: default categories now get fixed ids made from their names, with a last-edited time of 1970 and the synced state. Two phones therefore share the same default categories instead of duplicating them, and a customised default from the cloud overwrites the plain local one.
+- **FirestoreRemoteStore.swift**: wrapped in `#if canImport(FirebaseFirestore)`. Documents live at `users/{uid}/{categories|budgets|expenses}/{id}`. The Firestore disk cache is replaced by a memory cache, because Core Data is already the offline store and the disk cache would hold unconfirmed writes. Reads use `source: .server` so they fail quickly when offline. Each call has a 30 second timeout, because a Firestore write waits for the server and would otherwise hang when the connection drops mid-sync.
+- **FirebaseBootstrap.swift**: starts Firebase once, only when `GoogleService-Info.plist` is present. Shared by sign-in and sync.
+- **firestore.rules** (next to this file, not in the app): each signed-in user can read and write only their own `users/{uid}` documents. Paste it into Firestore Database > Rules and publish.
+- **NetworkMonitor.swift**: wraps `NWPathMonitor`. Online means the path is satisfied.
+- **Timeout.swift**: races an operation against a timer. Also holds the small `chunked(into:)` helper.
+- **StableID.swift**: makes the same UUID from the same text (SHA-256, version 5 layout).
+- **SyncBannerView.swift**: shows "Offline" with the number of changes waiting, then "Syncing", then "Synced" for 3 seconds. It shows nothing when idle.
+- **PersistenceController.swift**: `save(notify:)` can skip the change notification; the sync engine uses that when it only flips sync states. `wipeAll()` clears all three tables.

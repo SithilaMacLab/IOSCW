@@ -28,7 +28,7 @@ final class PersistenceController {
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
 
-    func save() throws {
+    func save(notify: Bool = true) throws {
         guard viewContext.hasChanges else { return }
         do {
             try viewContext.save()
@@ -36,6 +36,18 @@ final class PersistenceController {
             viewContext.rollback()
             throw error
         }
-        NotificationCenter.default.post(name: .pocketlensDataDidChange, object: nil)
+        if notify {
+            NotificationCenter.default.post(name: .pocketlensDataDidChange, object: nil)
+        }
+    }
+
+    func wipeAll() throws {
+        for name in ["Expense", "Budget", "ExpenseCategory"] {
+            let request = NSFetchRequest<NSManagedObject>(entityName: name)
+            for object in try viewContext.fetch(request) {
+                viewContext.delete(object)
+            }
+        }
+        try save()
     }
 }

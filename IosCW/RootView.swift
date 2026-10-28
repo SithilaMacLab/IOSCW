@@ -35,12 +35,17 @@ struct RootView: View {
         }
         .environmentObject(session)
         .environmentObject(lock)
+        .environmentObject(container.sync)
         .animation(.easeInOut(duration: 0.2), value: showsLock)
+        .task {
+            container.sync.sessionChanged()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .background:
                 lock.lockIfEnabled()
             case .active:
+                container.sync.appBecameActive()
                 if showsLock {
                     Task { await lock.unlock() }
                 }
@@ -50,6 +55,7 @@ struct RootView: View {
         }
         .onChange(of: session.isSignedIn) { _, _ in
             lock.releaseLock()
+            container.sync.sessionChanged()
         }
     }
 }

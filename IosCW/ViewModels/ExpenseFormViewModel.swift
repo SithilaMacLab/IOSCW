@@ -1,6 +1,13 @@
 import Combine
 import Foundation
 
+enum RateState: Equatable {
+    case notNeeded
+    case loading
+    case ready(ExchangeRate)
+    case unavailable
+}
+
 final class ExpenseFormViewModel: ObservableObject {
     @Published var type: TransactionType = .expense
     @Published var amountText = ""
@@ -8,20 +15,43 @@ final class ExpenseFormViewModel: ObservableObject {
     @Published var merchant = ""
     @Published var note = ""
     @Published var categoryID: UUID?
+    @Published var currencyCode: String
+    @Published var manualRateText = ""
+    @Published private(set) var rateState: RateState
     @Published var errorMessage: String?
 
     let categories: [ExpenseCategory]
-    let currencyCode: String
+    let currencies: [Currency]
     private let editing: Expense?
     private let repository: ExpenseRepositoryProtocol
+    private let rates: ExchangeRateServiceProtocol
 
     init(expenses: ExpenseRepositoryProtocol,
          categories: CategoryRepositoryProtocol,
+         rates: ExchangeRateServiceProtocol,
          editing: Expense? = nil) {
         repository = expenses
+        self.rates = rates
         self.categories = categories.fetchAll()
         self.editing = editing
-        currencyCode = editing?.currencyCode ?? AppConstants.baseCurrencyCode
+
+        let code = editing?.currencyCode ?? AppConstants.baseCurrencyCode
+        currencyCode = code
+
+        var list = Currency.supported
+        if !list.contains(where: { $0.code == code }) {
+            list.append(Currency(code: code))
+        }
+        currencies = list
+
+        if let editing, code != AppConstants.baseCurrencyCode {
+            rateState = .ready(ExchangeRate(currencyCode: code,
+                                            rateToLKR: editing.exchangeRate,
+                                            asOf: editing.date,
+                                            source: .stored))
+        } else {
+            rateState = .notNeeded
+        }
 
         if let editing {
             type = editing.type
@@ -35,14 +65,55 @@ final class ExpenseFormViewModel: ObservableObject {
 
     var isEditing: Bool { editing != nil }
 
+    var isForeign: Bool { currencyCode != AppConstants.baseCurrencyCode }
+
     var amount: Double? {
-        Double(amountText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
+        Self.parse(amountText)
     }
 
-    var canSave: Bool { (amount ?? 0) > 0 }
+    var exchangeRate: Double? {
+        switch rateState {
+        case .notNeeded: 1
+        case .ready(let rate): rate.rateToLKR
+        case .unavailable: Self.parse(manualRateText)
+        case .loading: nil
+        }
+    }
+
+    var convertedLKR: Double? {
+        guard let amount, let exchangeRate else { return nil }
+        return amount * exchangeRate
+    }
+
+    var canSave: Bool {
+        (amount ?? 0) > 0 && (exchangeRate ?? 0) > 0
+    }
+
+    func currencyDidChange() async {
+        guard isForeign else {
+            rateState = .notNeeded
+            return
+        }
+        if case .ready(let current) = rateState,
+           current.currencyCode == currencyCode,
+           current.source == .stored {
+            return
+        }
+
+        let code = currencyCode
+        rateState = .loading
+        do {
+            let rate = try await rates.rate(for: code)
+            guard code == currencyCode else { return }
+            rateState = .ready(rate)
+        } catch {
+            guard code == currencyCode else { return }
+            rateState = .unavailable
+        }
+    }
 
     func save() -> Bool {
-        guard let amount else {
+        guard let amount, let exchangeRate, exchangeRate > 0 else {
             errorMessage = ExpenseError.invalidAmount.localizedDescription
             return false
         }
@@ -51,7 +122,7 @@ final class ExpenseFormViewModel: ObservableObject {
             type: type,
             amount: amount,
             currencyCode: currencyCode,
-            exchangeRate: editing?.exchangeRate ?? 1,
+            exchangeRate: exchangeRate,
             date: date,
             merchant: merchant,
             note: note,
@@ -69,5 +140,9 @@ final class ExpenseFormViewModel: ObservableObject {
             errorMessage = error.localizedDescription
             return false
         }
+    }
+
+    private static func parse(_ text: String) -> Double? {
+        Double(text.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces))
     }
 }
