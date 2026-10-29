@@ -151,3 +151,26 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **Chart**: bars for the last 3 months and this month. This month's bar is stacked: solid for spent so far, pale for the expected rest. The legend names both, and the chart has a spoken summary for VoiceOver.
 - **Offline and privacy**: everything is calculated on the phone from the local database and nothing is sent anywhere.
 - **Other edits**: `ChartCard` in `DashboardView.swift` is no longer private so the Forecast screen can reuse it. `ContentView.swift` now passes the container to `ForecastView`.
+
+## Home Screen widget
+
+- **How the widget gets its data**: a widget is a separate program and cannot open the app's Core Data store. Instead the app writes a small summary (`WidgetSnapshot`) as JSON into an App Group, a shared storage area both programs can read, and then asks WidgetKit to refresh. The widget only reads that summary. No receipt photos, merchants or places go into it.
+- **WidgetSnapshot.swift**: the summary (month, spent, income, total budget limit, spent inside budgeted categories, expected month-end spending, up to 6 budget lines) and `WidgetStore`, which saves and loads it from the App Group `group.testdrtive.IosCW`. If the bundle identifier of the app changes, this id must change with it, and the App Group capability must be added again. This file is shared with the widget target.
+- **BudgetStatus.swift**: moved out of `BudgetMath.swift` so the widget can use the same on track, near limit and over budget rules without needing Core Data. Shared with the widget target.
+- **WidgetSnapshotBuilder.swift**: pure function that builds the summary from plain `ForecastEntry` values and the budget limits, so it can be unit tested. The gauge compares only spending inside budgeted categories with the total of all limits, so spending without a budget does not make it look worse than it is. The expected month-end spending comes from the forecast and is left out when there is not enough history.
+- **WidgetPublisher.swift**: builds the summary and saves it. It runs after every data change (waits 1 second after the last change so a sync of many items refreshes once), when the app opens, when it comes to the foreground, and when the user signs in or out. When nobody is signed in it deletes the summary, so the widget goes back to "Open Pocketlens". The preview and test containers use `NoWidgetPublisher`, so sample data never reaches a real widget.
+- **Widget code** (`WidgetSource/`, outside the app folder so it is not bundled into the app):
+  - `PocketlensWidgetBundle.swift`: the entry point of the widget extension.
+  - `PocketlensWidget.swift`: the provider, the views and a sample for previews. Sizes: small (spent, budget bar, status), medium (spent, expected, top 3 budgets), and two Lock Screen sizes (rectangular and circular gauge).
+  - Timeline: one entry now and one at the start of next month, refreshed at least hourly. After the month changes, the old summary is no longer shown; the widget asks the user to open the app, because last month's numbers would be wrong.
+- **Privacy**: every amount is marked `privacySensitive()`, so iOS hides it while the phone is locked and on the Lock Screen unless the user allows it. The widget has no Face ID of its own, which is how widgets work on iOS; the proposal asks for a widget that shows spending without opening the app.
+- **Status uses text and an icon as well as colour**, and each block is read by VoiceOver as one item.
+
+### Adding the widget target in Xcode (done by hand on the Mac)
+
+1. File, New, Target, Widget Extension. Product name `PocketlensWidget`. Untick Live Activity, Control and Configuration App Intent. Finish. If asked to activate the scheme, press Cancel.
+2. In the file list under `PocketlensWidget`, move the generated `PocketlensWidget.swift` and `PocketlensWidgetBundle.swift` (and any other generated .swift files) to the Trash. Keep the assets and the Info file.
+3. In Finder, copy the two files from `WidgetSource/` into the `PocketlensWidget` folder. Xcode picks them up by itself. If it does not, drag them in and tick only the widget target.
+4. Select `IosCW/Core/WidgetSnapshot.swift`, open the File inspector (right panel), and tick `PocketlensWidget` under Target Membership. Do the same for `IosCW/Core/BudgetStatus.swift`. The app target stays ticked.
+5. Select the project, then the `IosCW` target, Signing & Capabilities, + Capability, App Groups, + and add `group.testdrtive.IosCW`. Select the `PocketlensWidget` target and add the same group.
+6. Run the app scheme, sign in, then long-press the Home Screen, press +, find Pocketlens and add the widget.

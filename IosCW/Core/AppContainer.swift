@@ -11,6 +11,7 @@ final class AppContainer {
     let expenses: ExpenseRepositoryProtocol
     let budgets: BudgetRepositoryProtocol
     let sync: SyncEngine
+    let widget: WidgetPublishing
 
     init(persistence: PersistenceController,
          auth: AuthServiceProtocol,
@@ -18,7 +19,8 @@ final class AppContainer {
          remote: RemoteStoreProtocol? = nil,
          network: NetworkMonitor = NetworkMonitor(),
          recognizer: TextRecognizing = VisionTextRecognizer(),
-         location: LocationProviding = DeviceLocationProvider()) {
+         location: LocationProviding = DeviceLocationProvider(),
+         publishesWidget: Bool = false) {
         self.persistence = persistence
         self.auth = auth
         self.rates = rates
@@ -34,11 +36,15 @@ final class AppContainer {
                           auth: auth,
                           network: network,
                           categories: categories)
+        widget = publishesWidget
+            ? WidgetPublisher(expenses: expenses, budgets: budgets, auth: auth)
+            : NoWidgetPublisher()
     }
 
     static let live = AppContainer(persistence: .shared,
                                    auth: AuthServiceFactory.makeLive(),
-                                   remote: RemoteStoreFactory.makeLive())
+                                   remote: RemoteStoreFactory.makeLive(),
+                                   publishesWidget: true)
 
     static func preview(withSamples: Bool = true) -> AppContainer {
         let container = AppContainer(persistence: PersistenceController(inMemory: true),

@@ -39,6 +39,7 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.2), value: showsLock)
         .task {
             container.sync.sessionChanged()
+            container.widget.publish()
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -46,6 +47,7 @@ struct RootView: View {
                 lock.lockIfEnabled()
             case .active:
                 container.sync.appBecameActive()
+                container.widget.publish()
                 if showsLock {
                     Task { await lock.unlock() }
                 }
@@ -56,6 +58,7 @@ struct RootView: View {
         .onChange(of: session.isSignedIn) { _, _ in
             lock.releaseLock()
             container.sync.sessionChanged()
+            container.widget.publish()
         }
     }
 }
