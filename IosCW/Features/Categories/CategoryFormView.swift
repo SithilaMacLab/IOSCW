@@ -57,7 +57,7 @@ struct CategoryFormView: View {
                                     .overlay(Circle().stroke(icon == iconName ? Color(hex: colorHex) : .clear, lineWidth: 2))
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel(icon)
+                            .accessibilityLabel("Icon \(icon.replacingOccurrences(of: ".", with: " "))")
                             .accessibilityAddTraits(icon == iconName ? .isSelected : [])
                         }
                     }
@@ -83,7 +83,7 @@ struct CategoryFormView: View {
                                     .frame(width: 44, height: 44)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Colour \(hex)")
+                            .accessibilityLabel("Colour \((Self.colors.firstIndex(of: hex) ?? 0) + 1) of \(Self.colors.count)")
                             .accessibilityAddTraits(hex == colorHex ? .isSelected : [])
                         }
                     }

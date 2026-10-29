@@ -174,3 +174,47 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 4. Select `IosCW/Core/WidgetSnapshot.swift`, open the File inspector (right panel), and tick `PocketlensWidget` under Target Membership. Do the same for `IosCW/Core/BudgetStatus.swift`. The app target stays ticked.
 5. Select the project, then the `IosCW` target, Signing & Capabilities, + Capability, App Groups, + and add `group.testdrtive.IosCW`. Select the `PocketlensWidget` target and add the same group.
 6. Run the app scheme, sign in, then long-press the Home Screen, press +, find Pocketlens and add the widget.
+
+## Final polish: iPad, CSV export, accessibility, delete account, unit tests
+
+### iPad layout
+- **ContentView.swift**: uses the newer `Tab` API with `.tabViewStyle(.sidebarAdaptable)`. On iPhone it is the normal tab bar; on iPad it becomes a sidebar that the user can collapse, as in the prototype.
+- **ActivityView.swift**: when the horizontal size class is regular (iPad, and the iPhone Max in landscape) it uses a `NavigationSplitView`: the transaction list on the left and `ExpenseDetailView` on the right, with an empty "Select a transaction" state. On iPhone it keeps the stack and the edit sheet. The search, sort, filter and add controls are shared between both layouts. Deleting the selected row clears the detail pane.
+- **ExpenseDetailView.swift**: a read-only page with the amount, category, date, note, place and the saved receipt photo, and an Edit button that opens the normal form.
+- **DashboardView.swift** and **ForecastView.swift**: the cards sit in a `LazyVGrid` with adaptive columns (at least 340 points wide), so they are one column on iPhone and flow into two or more on iPad.
+
+### Accessibility and Dynamic Type
+- **AdaptiveRow.swift**: lays a row out side by side normally, and stacks it vertically at the accessibility text sizes so amounts are never cut off. Used by the transaction rows, budget rows, forecast rows and the detail page.
+- **Transaction rows** read as one sentence ("Keells, Expense of LKR 1,250.00, Groceries, 5 October 2026") instead of loose pieces and a minus sign.
+- **Category icons** grow a little with the text size (capped at 1.6 times) so they stay in proportion. Rank badges can widen instead of clipping.
+- **Chart cards**: titles are marked as headings for the VoiceOver rotor. The donut chart also reads out the top three categories.
+- **Pickers**: colour swatches read "Colour 3 of 12" and icons read their name without dots, instead of a hex code.
+- **Already in place from earlier steps**: warnings use an icon and text as well as colour, controls are at least 44 points tall, and the map list works without the map.
+
+### CSV export
+- **CSVExporter.swift**: pure functions. One row per transaction, oldest first, with ISO dates (2026-10-05), original amount and currency, the exchange rate, the LKR amount, note and place. Line breaks are Windows style as the CSV standard says. Fields with commas, quotes or line breaks are quoted. Text starting with `=`, `+`, `-` or `@` gets a leading apostrophe, so a merchant name read from a receipt cannot run as a spreadsheet formula.
+- **ExportViewModel.swift**: writes the file to the temporary folder with a UTF-8 byte order mark so Excel shows names correctly, then opens the share sheet (`ShareSheet.swift`, which wraps `UIActivityViewController`). The previous export file is deleted when the next one is made, not when the sheet closes, because AirDrop and Mail may still be reading it. Receipt photos are not included. With no transactions the user is told there is nothing to export.
+
+### Delete account and data
+- **Where**: Settings, Data, "Delete account and data". A sheet lists what will be deleted, asks for the password, then asks for a final confirmation.
+- **AccountDeletionService.swift** runs these steps in this order, so a failure never leaves the user half-deleted:
+  1. Refuse if nobody is signed in, or if cloud sync is on and the phone is offline (otherwise the cloud copy would be left behind).
+  2. Re-enter the password with Firebase (`reauthenticate`). Firebase requires a recent sign-in to delete an account, and this also confirms the user is who they say.
+  3. Stop the sync engine and wait for any running sync to finish, so nothing is uploaded again afterwards.
+  4. Delete the cloud data (`RemoteStore.deleteAll`: categories, budgets and expenses in batches of 400, then the user document), then delete the Firebase account. If either fails the sync engine is resumed and the error is shown; the local data is untouched.
+  5. Forget the sync bookkeeping, wipe the local database (receipt photos go with it), put the default categories back, clear the widget, switch the app lock off and return to the welcome screen.
+- **Dev mode** (no Firebase): the same steps run with the local sign-in only.
+- **SyncEngine.swift** gained `suspendForAccountDeletion`, `resumeAfterFailedDeletion`, `forgetAccount`, `syncAndWait` and `sessionChangedAndWait`. The last two are the same code the app already used, made awaitable so tests do not have to wait on timers. `NetworkMonitor` gained a switch to run without the real network for tests.
+- **firestore.rules** already allow a signed-in user to delete everything under their own `users/{uid}`, so no rule change is needed.
+
+### Unit tests (`TestSource/`)
+- The tests use Swift Testing (`import Testing`) and cover the areas named in the proposal: the receipt parser and row grouping, budget maths, the forecast, currency conversion and rate caching, and the sync rules. They also cover the CSV export, the widget summary, delete account, sign-in checks, spending areas and the category suggester. Each test suite is marked `@MainActor` because the app makes every type main-actor by default.
+- **Sync rules covered**: pending changes are uploaded then marked synced; default categories are not uploaded; a newer cloud change replaces the local copy; an older cloud change does not; a cloud deletion removes the local copy; a local deletion is uploaded as a tombstone and then removed; offline changes wait and upload when the connection returns; a failure keeps changes pending; a different user signing in clears the data; the same user keeps it; signed out means nothing is uploaded.
+- **TestSupport.swift** holds the fakes: a fake cloud store, a fake sign-in service and an event log that records the order of calls. Dates in tests use a fixed UTC calendar so the results do not depend on the time zone or the day the tests run.
+- **Known behaviour the tests do not change**: during a sync the app uploads first and downloads second, so when the same item was edited on two phones before either synced, the phone that syncs last wins on the server. The "newest edit wins" rule applies to what is downloaded.
+
+### Adding the test target in Xcode (done by hand on the Mac)
+1. File, New, Target, Unit Testing Bundle. Product name `IosCWTests`, Testing System "Swift Testing", Target to be tested `IosCW`.
+2. Move the generated `IosCWTests.swift` (and any UI test files) to the Trash.
+3. In Finder copy all the files from `TestSource/` into the `IosCWTests` folder. Xcode picks them up by itself. If it does not, drag them in and tick only the test target.
+4. Press Command-U to run all tests. Each test name appears in the Test navigator.

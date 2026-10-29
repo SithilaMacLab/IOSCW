@@ -12,6 +12,7 @@ final class AppContainer {
     let budgets: BudgetRepositoryProtocol
     let sync: SyncEngine
     let widget: WidgetPublishing
+    let accountDeletion: AccountDeleting
 
     init(persistence: PersistenceController,
          auth: AuthServiceProtocol,
@@ -39,6 +40,13 @@ final class AppContainer {
         widget = publishesWidget
             ? WidgetPublisher(expenses: expenses, budgets: budgets, auth: auth)
             : NoWidgetPublisher()
+        accountDeletion = AccountDeletionService(auth: auth,
+                                                 remote: remote,
+                                                 sync: sync,
+                                                 persistence: persistence,
+                                                 categories: categories,
+                                                 widget: widget,
+                                                 network: network)
     }
 
     static let live = AppContainer(persistence: .shared,

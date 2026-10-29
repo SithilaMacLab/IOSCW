@@ -4,6 +4,9 @@ import SwiftUI
 struct DashboardView: View {
     let container: AppContainer
     @StateObject private var viewModel: DashboardViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
 
     init(container: AppContainer) {
         self.container = container
@@ -15,7 +18,7 @@ struct DashboardView: View {
             Group {
                 if viewModel.hasAnyTransactions {
                     ScrollView {
-                        VStack(spacing: 16) {
+                        LazyVGrid(columns: columns, spacing: 16) {
                             summaryCards
                             forecastCard
                             categoryCard
@@ -41,7 +44,10 @@ struct DashboardView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 12) {
+            let tiles = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 12))
+                : AnyLayout(HStackLayout(spacing: 12))
+            tiles {
                 SummaryTile(title: "Income", value: viewModel.monthIncome,
                             systemImage: "arrow.down.circle.fill", tint: .green)
                 SummaryTile(title: "Spent", value: viewModel.monthExpenses,
@@ -97,7 +103,7 @@ struct DashboardView: View {
                         HStack(spacing: 10) {
                             Text("\(index + 1)")
                                 .font(.footnote.bold())
-                                .frame(width: 26, height: 26)
+                                .frame(minWidth: 26, minHeight: 26)
                                 .background(Color.red.opacity(0.2), in: Circle())
                                 .accessibilityHidden(true)
                             Text(area.name)
@@ -143,6 +149,9 @@ struct DashboardView: View {
                 .chartLegend(.hidden)
                 .frame(height: 220)
                 .accessibilityLabel("Donut chart of this month's spending by category")
+                .accessibilityValue(viewModel.categoryTotals.prefix(3)
+                    .map { "\($0.name) \(CurrencyFormatter.lkr($0.total))" }
+                    .joined(separator: ", "))
 
                 VStack(spacing: 10) {
                     ForEach(viewModel.categoryTotals) { item in
@@ -199,6 +208,7 @@ private struct SummaryTile: View {
     let value: Double
     let systemImage: String
     let tint: Color
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(spacing: 12) {
@@ -213,7 +223,7 @@ private struct SummaryTile: View {
                 Text(CurrencyFormatter.lkr(value))
                     .font(.headline.monospacedDigit())
                     .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             }
             Spacer(minLength: 0)
         }
@@ -232,6 +242,7 @@ struct ChartCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             content
         }
         .padding()

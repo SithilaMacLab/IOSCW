@@ -5,21 +5,27 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            DashboardView(container: container)
-                .tabItem { Label("Dashboard", systemImage: "chart.pie") }
+            Tab("Dashboard", systemImage: "chart.pie") {
+                DashboardView(container: container)
+            }
 
-            ActivityView(container: container)
-                .tabItem { Label("Activity", systemImage: "list.bullet") }
+            Tab("Activity", systemImage: "list.bullet") {
+                ActivityView(container: container)
+            }
 
-            BudgetsView(container: container)
-                .tabItem { Label("Budgets", systemImage: "target") }
+            Tab("Budgets", systemImage: "target") {
+                BudgetsView(container: container)
+            }
 
-            ForecastView(container: container)
-                .tabItem { Label("Forecast", systemImage: "chart.line.uptrend.xyaxis") }
+            Tab("Forecast", systemImage: "chart.line.uptrend.xyaxis") {
+                ForecastView(container: container)
+            }
 
-            SettingsView(container: container)
-                .tabItem { Label("Settings", systemImage: "gearshape") }
+            Tab("Settings", systemImage: "gearshape") {
+                SettingsView(container: container)
+            }
         }
+        .tabViewStyle(.sidebarAdaptable)
         .safeAreaInset(edge: .top, spacing: 0) {
             SyncBannerView()
         }

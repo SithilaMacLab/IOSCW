@@ -41,6 +41,27 @@ final class FirebaseAuthService: AuthServiceProtocol {
         }
     }
 
+    func reauthenticate(password: String) async throws {
+        guard let user = Auth.auth().currentUser, let email = user.email else {
+            throw AuthError.wrongCredentials
+        }
+        do {
+            let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+            try await user.reauthenticate(with: credential)
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else { return }
+        do {
+            try await user.delete()
+        } catch {
+            throw Self.map(error)
+        }
+    }
+
     private static func map(_ error: Error) -> AuthError {
         let nsError = error as NSError
         guard let code = AuthErrorCode.Code(rawValue: nsError.code) else {
@@ -52,6 +73,7 @@ final class FirebaseAuthService: AuthServiceProtocol {
         case .emailAlreadyInUse: return .emailAlreadyInUse
         case .wrongPassword, .userNotFound, .invalidCredential: return .wrongCredentials
         case .networkError: return .network
+        case .requiresRecentLogin: return .requiresRecentLogin
         default: return .unknown(error.localizedDescription)
         }
     }

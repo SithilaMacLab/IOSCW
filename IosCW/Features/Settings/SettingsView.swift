@@ -5,8 +5,20 @@ struct SettingsView: View {
     @EnvironmentObject private var session: AuthViewModel
     @EnvironmentObject private var lock: AppLockViewModel
     @EnvironmentObject private var sync: SyncEngine
+    @StateObject private var export: ExportViewModel
     @State private var loadedSamples = false
     @State private var confirmingSignOut = false
+    @State private var showingDelete = false
+
+    init(container: AppContainer) {
+        self.container = container
+        _export = StateObject(wrappedValue: ExportViewModel(expenses: container.expenses))
+    }
+
+    private var exportErrorBinding: Binding<Bool> {
+        Binding(get: { export.errorMessage != nil },
+                set: { if !$0 { export.errorMessage = nil } })
+    }
 
     private var lockBinding: Binding<Bool> {
         Binding(get: { lock.isEnabled },
@@ -86,9 +98,24 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Data") {
-                    Text("Export CSV")
-                    Text("Delete account and data")
+                Section {
+                    Button {
+                        export.prepare()
+                    } label: {
+                        Label("Export CSV", systemImage: "square.and.arrow.up")
+                            .frame(minHeight: 44, alignment: .leading)
+                    }
+
+                    Button(role: .destructive) {
+                        showingDelete = true
+                    } label: {
+                        Label("Delete account and data", systemImage: "trash")
+                            .frame(minHeight: 44, alignment: .leading)
+                    }
+                } header: {
+                    Text("Data")
+                } footer: {
+                    Text("The CSV file lists every transaction and opens in Excel or Numbers. Receipt photos are not included.")
                 }
 
                 #if DEBUG
@@ -113,6 +140,24 @@ struct SettingsView: View {
                                 titleVisibility: .visible) {
                 Button("Sign out", role: .destructive) { session.signOut() }
                 Button("Cancel", role: .cancel) {}
+            }
+            .sheet(isPresented: $export.isSharing) {
+                if let url = export.fileURL {
+                    ShareSheet(items: [url])
+                        .presentationDetents([.medium, .large])
+                }
+            }
+            .sheet(isPresented: $showingDelete) {
+                DeleteAccountView(service: container.accountDeletion) {
+                    showingDelete = false
+                    lock.resetAfterAccountDeletion()
+                    session.refreshSession()
+                }
+            }
+            .alert("Export", isPresented: exportErrorBinding) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(export.errorMessage ?? "")
             }
         }
     }

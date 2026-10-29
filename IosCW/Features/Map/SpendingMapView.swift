@@ -106,7 +106,7 @@ private struct AreaRow: View {
             HStack(spacing: 12) {
                 Text("\(rank)")
                     .font(.subheadline.bold())
-                    .frame(width: 28, height: 28)
+                    .frame(minWidth: 28, minHeight: 28)
                     .background(Color.red.opacity(0.2), in: Circle())
                     .accessibilityHidden(true)
 

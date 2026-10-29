@@ -32,6 +32,14 @@ final class DevAuthService: AuthServiceProtocol {
         guard AuthValidator.isValidEmail(email) else { throw AuthError.invalidEmail }
     }
 
+    func reauthenticate(password: String) async throws {
+        guard isSignedIn, !password.isEmpty else { throw AuthError.wrongCredentials }
+    }
+
+    func deleteAccount() async throws {
+        defaults.removeObject(forKey: key)
+    }
+
     private func validate(email: String, password: String) throws {
         guard AuthValidator.isValidEmail(email) else { throw AuthError.invalidEmail }
         guard AuthValidator.passwordProblem(password) == nil else { throw AuthError.weakPassword }

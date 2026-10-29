@@ -25,6 +25,7 @@ final class SyncEngine: ObservableObject {
     private let defaults: UserDefaults
 
     private var isSyncing = false
+    private var isSuspended = false
     private var retryDelay: TimeInterval = 5
     private var debounceTask: Task<Void, Never>?
     private var retryTask: Task<Void, Never>?
@@ -77,18 +78,15 @@ final class SyncEngine: ObservableObject {
     }
 
     func sessionChanged() {
-        guard remote != nil else {
-            status = .notConfigured
-            return
+        if startSession() {
+            requestSync()
         }
-        guard let userID = auth.currentUserID else {
-            debounceTask?.cancel()
-            retryTask?.cancel()
-            status = .signedOut
-            return
+    }
+
+    func sessionChangedAndWait() async {
+        if startSession() {
+            await syncAndWait()
         }
-        prepareLocalData(for: userID)
-        requestSync()
     }
 
     func appBecameActive() {
@@ -100,18 +98,63 @@ final class SyncEngine: ObservableObject {
         requestSync()
     }
 
-    private func requestSync() {
-        guard remote != nil, auth.currentUserID != nil else { return }
+    func syncAndWait() async {
+        guard remote != nil, auth.currentUserID != nil, !isSuspended else { return }
         guard network.isOnline else {
             status = .offline
             refreshPending()
             return
         }
-        Task { await runSync() }
+        await runSync()
+    }
+
+    func suspendForAccountDeletion() async {
+        isSuspended = true
+        debounceTask?.cancel()
+        retryTask?.cancel()
+        while isSyncing {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+    }
+
+    func resumeAfterFailedDeletion() {
+        isSuspended = false
+    }
+
+    func forgetAccount(userID: String) {
+        let prefix = "syncLastPull.\(userID)."
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
+            defaults.removeObject(forKey: key)
+        }
+        defaults.removeObject(forKey: ownerKey)
+        defaults.removeObject(forKey: lastSyncedKey)
+        lastSyncedAt = nil
+        isSuspended = false
+        refreshPending()
+        status = remote == nil ? .notConfigured : .signedOut
+    }
+
+    private func startSession() -> Bool {
+        guard remote != nil else {
+            status = .notConfigured
+            return false
+        }
+        guard let userID = auth.currentUserID else {
+            debounceTask?.cancel()
+            retryTask?.cancel()
+            status = .signedOut
+            return false
+        }
+        prepareLocalData(for: userID)
+        return true
+    }
+
+    private func requestSync() {
+        Task { await syncAndWait() }
     }
 
     private func networkChanged(_ online: Bool) {
-        guard remote != nil, auth.currentUserID != nil else { return }
+        guard remote != nil, auth.currentUserID != nil, !isSuspended else { return }
         if online {
             requestSync()
         } else {
@@ -124,7 +167,7 @@ final class SyncEngine: ObservableObject {
 
     private func dataChanged() {
         refreshPending()
-        guard !isSyncing, remote != nil, auth.currentUserID != nil, pendingCount > 0 else { return }
+        guard !isSyncing, !isSuspended, remote != nil, auth.currentUserID != nil, pendingCount > 0 else { return }
         guard network.isOnline else {
             status = .offline
             return
@@ -138,7 +181,7 @@ final class SyncEngine: ObservableObject {
     }
 
     private func runSync() async {
-        guard !isSyncing, let remote, let userID = auth.currentUserID, network.isOnline else { return }
+        guard !isSyncing, !isSuspended, let remote, let userID = auth.currentUserID, network.isOnline else { return }
         isSyncing = true
         retryTask?.cancel()
         status = .syncing

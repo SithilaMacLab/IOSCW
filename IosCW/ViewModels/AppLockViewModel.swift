@@ -29,6 +29,12 @@ final class AppLockViewModel: ObservableObject {
         }
     }
 
+    func resetAfterAccountDeletion() {
+        persist(false)
+        isLocked = false
+        errorMessage = nil
+    }
+
     func releaseLock() {
         isLocked = false
         errorMessage = nil

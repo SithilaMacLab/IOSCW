@@ -12,8 +12,19 @@ struct ExpenseRowView: View {
         expense.currencyCode != AppConstants.baseCurrencyCode
     }
 
+    private var spokenLabel: String {
+        var parts = [title,
+                     "\(expense.type == .income ? "Income" : "Expense") of \(CurrencyFormatter.lkr(expense.amountLKR))"]
+        if isForeign {
+            parts.append("originally \(expense.amount.formatted(.currency(code: expense.currencyCode)))")
+        }
+        parts.append(expense.category?.name ?? "Uncategorised")
+        parts.append(expense.date.formatted(date: .long, time: .omitted))
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
+        AdaptiveRow {
             CategoryIcon(iconName: expense.category?.iconName ?? "questionmark.circle.fill",
                          colorHex: expense.category?.colorHex ?? "#8E8E93")
 
@@ -24,9 +35,7 @@ struct ExpenseRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
-            Spacer()
-
+        } trailing: {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(amountText)
                     .font(.body.monospacedDigit())
@@ -39,7 +48,8 @@ struct ExpenseRowView: View {
             }
         }
         .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenLabel)
     }
 
     private var amountText: String {
@@ -52,12 +62,15 @@ struct CategoryIcon: View {
     let iconName: String
     let colorHex: String
     var size: CGFloat = 40
+    @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
+
+    private var scaledSize: CGFloat { size * min(textScale, 1.6) }
 
     var body: some View {
         Image(systemName: iconName)
-            .font(.system(size: size * 0.45))
+            .font(.system(size: scaledSize * 0.45))
             .foregroundStyle(.white)
-            .frame(width: size, height: size)
+            .frame(width: scaledSize, height: scaledSize)
             .background(Color(hex: colorHex), in: Circle())
             .accessibilityHidden(true)
     }

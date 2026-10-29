@@ -94,7 +94,7 @@ struct BudgetRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
+            AdaptiveRow {
                 CategoryIcon(iconName: item.category.iconName, colorHex: item.category.colorHex, size: 36)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.category.name)
@@ -103,7 +103,7 @@ struct BudgetRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
+            } trailing: {
                 Label(item.status.title, systemImage: item.status.systemImage)
                     .font(.caption.bold())
                     .foregroundStyle(item.status.color)

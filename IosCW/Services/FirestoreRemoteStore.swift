@@ -41,6 +41,32 @@ final class FirestoreRemoteStore: RemoteStoreProtocol {
         }
     }
 
+    func deleteAll(userID: String) async throws {
+        let user = database.collection("users").document(userID)
+
+        for kind in SyncKind.allCases {
+            let collection = user.collection(kind.rawValue)
+            for _ in 0..<500 {
+                let snapshot = try await Timeout.run(seconds: 30) {
+                    try await collection.limit(to: 400).getDocuments(source: .server)
+                }
+                guard !snapshot.documents.isEmpty else { break }
+
+                let batch = database.batch()
+                for document in snapshot.documents {
+                    batch.deleteDocument(document.reference)
+                }
+                try await Timeout.run(seconds: 30) {
+                    try await batch.commit()
+                }
+            }
+        }
+
+        try await Timeout.run(seconds: 30) {
+            try await user.delete()
+        }
+    }
+
     private func document(for record: SyncRecord, userID: String) -> DocumentReference {
         database.collection("users").document(userID)
             .collection(record.kind.rawValue).document(record.id.uuidString)

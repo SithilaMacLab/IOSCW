@@ -16,6 +16,10 @@ final class AuthViewModel: ObservableObject {
 
     var userEmail: String? { service.currentUserEmail }
 
+    func refreshSession() {
+        isSignedIn = service.isSignedIn
+    }
+
     func clearMessages() {
         errorMessage = nil
         infoMessage = nil

@@ -6,6 +6,7 @@ enum AuthError: LocalizedError {
     case emailAlreadyInUse
     case wrongCredentials
     case network
+    case requiresRecentLogin
     case unknown(String)
 
     var errorDescription: String? {
@@ -15,6 +16,7 @@ enum AuthError: LocalizedError {
         case .emailAlreadyInUse: "An account with that email already exists. Try signing in."
         case .wrongCredentials: "The email or password is incorrect."
         case .network: "No connection. Check your internet and try again."
+        case .requiresRecentLogin: "For your safety, sign out, sign in again and then retry."
         case .unknown(let message): message
         }
     }

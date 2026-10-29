@@ -4,6 +4,8 @@ import SwiftUI
 struct ForecastView: View {
     @StateObject private var viewModel: ForecastViewModel
 
+    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
+
     init(container: AppContainer) {
         _viewModel = StateObject(wrappedValue: ForecastViewModel(expenses: container.expenses,
                                                                  budgets: container.budgets))
@@ -21,7 +23,7 @@ struct ForecastView: View {
                     }
                 case .ready(let result):
                     ScrollView {
-                        VStack(spacing: 16) {
+                        LazyVGrid(columns: columns, spacing: 16) {
                             summaryCard(result)
                             if !viewModel.alerts.isEmpty {
                                 alertsCard
@@ -48,7 +50,7 @@ struct ForecastView: View {
                 FigureRow(title: "Spending", systemImage: "arrow.up.circle.fill", tint: .red,
                           figure: result.expenses)
                 Divider()
-                HStack(spacing: 12) {
+                AdaptiveRow {
                     Image(systemName: "scalemass.fill")
                         .font(.title3)
                         .foregroundStyle(result.leftOver >= 0 ? Color.blue : Color.orange)
@@ -56,7 +58,7 @@ struct ForecastView: View {
                         .accessibilityHidden(true)
                     Text("Left over")
                         .font(.subheadline)
-                    Spacer()
+                } trailing: {
                     Text(CurrencyFormatter.lkr(result.leftOver))
                         .font(.headline.monospacedDigit())
                 }
@@ -146,7 +148,7 @@ private struct FigureRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
+            AdaptiveRow {
                 Image(systemName: systemImage)
                     .font(.title3)
                     .foregroundStyle(tint)
@@ -154,11 +156,9 @@ private struct FigureRow: View {
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.subheadline)
-                Spacer()
+            } trailing: {
                 Text(CurrencyFormatter.lkr(figure.expected))
                     .font(.headline.monospacedDigit())
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
             }
             ProgressView(value: figure.progress)
                 .tint(tint)
@@ -177,10 +177,10 @@ private struct CategoryOutlookRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
+            AdaptiveRow(spacing: 10) {
                 CategoryIcon(iconName: outlook.forecast.iconName, colorHex: outlook.forecast.colorHex, size: 28)
                 Text(outlook.forecast.name)
-                Spacer()
+            } trailing: {
                 Text(CurrencyFormatter.lkr(outlook.forecast.figure.expected))
                     .monospacedDigit()
             }
