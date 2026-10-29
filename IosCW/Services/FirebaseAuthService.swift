@@ -64,7 +64,7 @@ final class FirebaseAuthService: AuthServiceProtocol {
 
     private static func map(_ error: Error) -> AuthError {
         let nsError = error as NSError
-        guard let code = AuthErrorCode.Code(rawValue: nsError.code) else {
+        guard let code = AuthErrorCode(rawValue: nsError.code) else {
             return .unknown(error.localizedDescription)
         }
         switch code {
