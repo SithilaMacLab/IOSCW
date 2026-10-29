@@ -255,6 +255,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pocketlens uses the camera to scan your receipts. Photos are read on this phone and never uploaded.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pocketlens uses Face ID to keep your financial data private.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Pocketlens saves where you scanned a receipt so it can show which areas you spend in. You can remove the place from any receipt.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +289,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pocketlens uses the camera to scan your receipts. Photos are read on this phone and never uploaded.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Pocketlens uses Face ID to keep your financial data private.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Pocketlens saves where you scanned a receipt so it can show which areas you spend in. You can remove the place from any receipt.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

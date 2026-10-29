@@ -11,6 +11,16 @@ enum SampleData {
         "Health": ["Osusala", "Healthguard"]
     ]
 
+    private static let places: [Place] = [
+        Place(latitude: 6.8895, longitude: 79.8553, name: "Bambalapitiya, Colombo"),
+        Place(latitude: 6.9344, longitude: 79.8428, name: "Fort, Colombo"),
+        Place(latitude: 6.8847, longitude: 79.8620, name: "Havelock Town, Colombo"),
+        Place(latitude: 6.8649, longitude: 79.8997, name: "Nugegoda"),
+        Place(latitude: 6.8518, longitude: 79.8650, name: "Dehiwala"),
+        Place(latitude: 6.9114, longitude: 79.8505, name: "Kollupitiya, Colombo"),
+        Place(latitude: 6.9094, longitude: 79.8886, name: "Rajagiriya")
+    ]
+
     static func populate(_ container: AppContainer) {
         let categories = container.categories.fetchAll()
         let calendar = Calendar.current
@@ -36,7 +46,8 @@ enum SampleData {
                         amount: Double(Int.random(in: 8...120) * 100),
                         date: date,
                         merchant: shops.randomElement() ?? "",
-                        category: category))
+                        category: category,
+                        place: places.randomElement()))
                 }
             }
         }

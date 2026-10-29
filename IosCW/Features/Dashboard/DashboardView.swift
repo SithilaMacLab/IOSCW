@@ -2,9 +2,11 @@ import Charts
 import SwiftUI
 
 struct DashboardView: View {
+    let container: AppContainer
     @StateObject private var viewModel: DashboardViewModel
 
     init(container: AppContainer) {
+        self.container = container
         _viewModel = StateObject(wrappedValue: DashboardViewModel(expenses: container.expenses))
     }
 
@@ -16,6 +18,7 @@ struct DashboardView: View {
                         VStack(spacing: 16) {
                             summaryCards
                             categoryCard
+                            placesCard
                             trendCard
                         }
                         .padding()
@@ -45,6 +48,43 @@ struct DashboardView: View {
             }
             SummaryTile(title: "Balance", value: viewModel.balance,
                         systemImage: "scalemass.fill", tint: viewModel.balance >= 0 ? .blue : .orange)
+        }
+    }
+
+    private var placesCard: some View {
+        ChartCard(title: "Where you spend") {
+            if viewModel.topAreas.isEmpty {
+                Label("Scan a receipt with location on to see which areas take the most.",
+                      systemImage: "mappin.slash")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(Array(viewModel.topAreas.enumerated()), id: \.element.id) { index, area in
+                        HStack(spacing: 10) {
+                            Text("\(index + 1)")
+                                .font(.footnote.bold())
+                                .frame(width: 26, height: 26)
+                                .background(Color.red.opacity(0.2), in: Circle())
+                                .accessibilityHidden(true)
+                            Text(area.name)
+                            Spacer()
+                            Text(CurrencyFormatter.lkr(area.total))
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.subheadline)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+
+            NavigationLink {
+                SpendingMapView(container: container)
+            } label: {
+                Label("See the map", systemImage: "map")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            }
         }
     }
 

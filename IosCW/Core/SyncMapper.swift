@@ -42,6 +42,13 @@ enum SyncMapper {
             if let categoryID = expense.category?.id {
                 fields["categoryID"] = categoryID.uuidString
             }
+            if let place = expense.place {
+                fields["latitude"] = place.latitude
+                fields["longitude"] = place.longitude
+                if let name = place.name, !name.isEmpty {
+                    fields["placeName"] = name
+                }
+            }
             return SyncRecord(
                 kind: .expenses,
                 id: expense.id,
@@ -80,6 +87,11 @@ enum SyncMapper {
             expense.merchant = record.string("merchant") ?? expense.merchant
             expense.note = record.string("note") ?? expense.note
             expense.typeRaw = record.string("type") ?? expense.typeRaw
+            if let latitude = record.double("latitude"), let longitude = record.double("longitude") {
+                expense.place = Place(latitude: latitude, longitude: longitude, name: record.string("placeName"))
+            } else {
+                expense.place = nil
+            }
             expense.category = category(withID: record.string("categoryID"), in: context)
             finish(expense, with: record)
 

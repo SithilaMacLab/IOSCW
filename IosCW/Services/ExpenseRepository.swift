@@ -19,6 +19,8 @@ struct ExpenseDraft {
     var merchant: String = ""
     var note: String = ""
     var category: ExpenseCategory?
+    var place: Place?
+    var receiptImageData: Data?
 }
 
 protocol ExpenseRepositoryProtocol {
@@ -58,6 +60,7 @@ final class CoreDataExpenseRepository: ExpenseRepositoryProtocol {
     }
 
     func delete(_ expense: Expense) throws {
+        expense.receiptImageData = nil
         expense.softDelete()
         try persistence.save()
     }
@@ -72,6 +75,8 @@ final class CoreDataExpenseRepository: ExpenseRepositoryProtocol {
         expense.merchant = draft.merchant.trimmingCharacters(in: .whitespacesAndNewlines)
         expense.note = draft.note.trimmingCharacters(in: .whitespacesAndNewlines)
         expense.category = draft.category
+        expense.place = draft.place
+        expense.receiptImageData = draft.receiptImageData
         expense.markEdited()
     }
 }

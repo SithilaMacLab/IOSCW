@@ -56,11 +56,27 @@ final class Expense: NSManagedObject, Identifiable, SyncTracked {
     @NSManaged var lastEdited: Date
     @NSManaged var syncStateRaw: String
     @NSManaged var isSoftDeleted: Bool
+    @NSManaged var latitude: NSNumber?
+    @NSManaged var longitude: NSNumber?
+    @NSManaged var placeName: String?
+    @NSManaged var receiptImageData: Data?
     @NSManaged var category: ExpenseCategory?
 
     var type: TransactionType {
         get { TransactionType(rawValue: typeRaw) ?? .expense }
         set { typeRaw = newValue.rawValue }
+    }
+
+    var place: Place? {
+        get {
+            guard let latitude, let longitude else { return nil }
+            return Place(latitude: latitude.doubleValue, longitude: longitude.doubleValue, name: placeName)
+        }
+        set {
+            latitude = newValue.map { NSNumber(value: $0.latitude) }
+            longitude = newValue.map { NSNumber(value: $0.longitude) }
+            placeName = newValue?.name
+        }
     }
 }
 

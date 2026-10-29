@@ -18,10 +18,20 @@ final class PersistenceController {
             container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
 
-        container.loadPersistentStores { _, error in
-            if let error {
-                fatalError("Could not load the Core Data store: \(error)")
-            }
+        var loadError = Self.loadStores(of: container)
+
+        if let error = loadError, !inMemory, Self.isIncompatibleStore(error),
+           let url = container.persistentStoreDescriptions.first?.url {
+            print("Rebuilding the local store, it was made by an older version of the model: \(error)")
+            try? container.persistentStoreCoordinator.destroyPersistentStore(at: url,
+                                                                            ofType: NSSQLiteStoreType,
+                                                                            options: nil)
+            Self.forgetPullHistory()
+            loadError = Self.loadStores(of: container)
+        }
+
+        if let loadError {
+            fatalError("Could not load the Core Data store: \(loadError)")
         }
 
         container.viewContext.automaticallyMergesChangesFromParent = true
@@ -49,5 +59,33 @@ final class PersistenceController {
             }
         }
         try save()
+    }
+
+    private static func loadStores(of container: NSPersistentContainer) -> NSError? {
+        var failure: NSError?
+        container.loadPersistentStores { _, error in
+            if let error {
+                failure = error as NSError
+            }
+        }
+        return failure
+    }
+
+    private static func isIncompatibleStore(_ error: NSError) -> Bool {
+        let codes: Set<Int> = [134100, 134110, 134130, 134140]
+        if error.domain == NSCocoaErrorDomain, codes.contains(error.code) {
+            return true
+        }
+        if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isIncompatibleStore(underlying)
+        }
+        return false
+    }
+
+    private static func forgetPullHistory() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("syncLastPull.") {
+            defaults.removeObject(forKey: key)
+        }
     }
 }

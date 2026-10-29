@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExpenseFormView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @StateObject private var viewModel: ExpenseFormViewModel
 
     init(container: AppContainer, editing: Expense? = nil, prefill: ReceiptPrefill? = nil) {
@@ -9,6 +10,7 @@ struct ExpenseFormView: View {
             expenses: container.expenses,
             categories: container.categories,
             rates: container.rates,
+            location: container.location,
             editing: editing,
             prefill: prefill))
     }
@@ -67,6 +69,10 @@ struct ExpenseFormView: View {
                     }
                 }
 
+                if viewModel.showsPlaceSection {
+                    placeSection
+                }
+
                 if viewModel.isForeign {
                     rateSection
                 }
@@ -90,6 +96,7 @@ struct ExpenseFormView: View {
                 }
             }
             .task { await viewModel.currencyDidChange() }
+            .task { await viewModel.captureLocationForScan() }
             .onChange(of: viewModel.currencyCode) { _, _ in
                 Task { await viewModel.currencyDidChange() }
             }
@@ -103,7 +110,7 @@ struct ExpenseFormView: View {
 
     private var title: String {
         if viewModel.isEditing { return "Edit transaction" }
-        return viewModel.isFromReceipt ? "Review receipt" : "New transaction"
+        return viewModel.isReviewingScan ? "Review receipt" : "New transaction"
     }
 
     private func receiptSection(_ thumbnail: UIImage) -> some View {
@@ -113,19 +120,80 @@ struct ExpenseFormView: View {
                 .scaledToFit()
                 .frame(maxWidth: .infinity, maxHeight: 180)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                .accessibilityLabel("Scanned receipt")
+                .accessibilityLabel("Receipt photo")
 
-            if viewModel.flagged.isEmpty {
-                Label("Everything looks right. Check it and save.", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
-            } else {
-                Label(flaggedSummary, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+            if viewModel.isReviewingScan {
+                if viewModel.flagged.isEmpty {
+                    Label("Everything looks right. Check it and save.", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Label(flaggedSummary, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
             }
         } header: {
-            Text("Scanned receipt")
+            Text("Receipt")
         } footer: {
-            Text("Read on this phone. Fields marked with a warning were hard to read, so please check them.")
+            if viewModel.isReviewingScan {
+                Text("Read on this phone. Fields marked with a warning were hard to read, so please check them.")
+            } else {
+                Text("The photo stays on this phone and is not uploaded.")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var placeSection: some View {
+        Section {
+            switch viewModel.locationState {
+            case .notSet:
+                if viewModel.canAddPlace {
+                    Button {
+                        Task { await viewModel.captureLocation() }
+                    } label: {
+                        Label("Add current place", systemImage: "location")
+                    }
+                    .frame(minHeight: 44)
+                }
+
+            case .locating:
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Finding where you are…")
+                        .foregroundStyle(.secondary)
+                }
+
+            case .located(let place):
+                Label(place.name ?? "Place saved", systemImage: "mappin.circle.fill")
+                    .foregroundStyle(.green)
+                Button("Remove place", role: .destructive) {
+                    viewModel.removeLocation()
+                }
+                .frame(minHeight: 44)
+
+            case .denied:
+                Label("Location is off for Pocketlens, so this will be saved without a place.",
+                      systemImage: "location.slash")
+                    .foregroundStyle(.orange)
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                }
+                .frame(minHeight: 44)
+
+            case .unavailable:
+                Label("Couldn't find your location.", systemImage: "location.slash")
+                    .foregroundStyle(.orange)
+                Button("Try again") {
+                    Task { await viewModel.captureLocation() }
+                }
+                .frame(minHeight: 44)
+            }
+        } header: {
+            Text("Place")
+        } footer: {
+            Text("Used for the Where you spend map. You can remove it at any time.")
         }
     }
 

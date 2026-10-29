@@ -5,13 +5,20 @@ enum CoreDataModel {
 
     private static func attribute(_ name: String,
                                   _ type: NSAttributeType,
-                                  defaultValue: Any? = nil) -> NSAttributeDescription {
+                                  defaultValue: Any? = nil,
+                                  optional: Bool = false) -> NSAttributeDescription {
         let attribute = NSAttributeDescription()
         attribute.name = name
         attribute.attributeType = type
-        attribute.isOptional = false
+        attribute.isOptional = optional
         attribute.defaultValue = defaultValue
         return attribute
+    }
+
+    private static func receiptImageAttribute() -> NSAttributeDescription {
+        let description = attribute("receiptImageData", .binaryDataAttributeType, optional: true)
+        description.allowsExternalBinaryDataStorage = true
+        return description
     }
 
     private static func syncAttributes() -> [NSAttributeDescription] {
@@ -86,6 +93,10 @@ enum CoreDataModel {
             attribute("merchant", .stringAttributeType, defaultValue: ""),
             attribute("note", .stringAttributeType, defaultValue: ""),
             attribute("typeRaw", .stringAttributeType, defaultValue: TransactionType.expense.rawValue),
+            attribute("latitude", .doubleAttributeType, optional: true),
+            attribute("longitude", .doubleAttributeType, optional: true),
+            attribute("placeName", .stringAttributeType, optional: true),
+            receiptImageAttribute(),
             expenseCategory
         ]
 

@@ -6,6 +6,7 @@ final class AppContainer {
     let rates: ExchangeRateServiceProtocol
     let network: NetworkMonitor
     let recognizer: TextRecognizing
+    let location: LocationProviding
     let categories: CategoryRepositoryProtocol
     let expenses: ExpenseRepositoryProtocol
     let budgets: BudgetRepositoryProtocol
@@ -16,12 +17,14 @@ final class AppContainer {
          rates: ExchangeRateServiceProtocol = CachedExchangeRateService(),
          remote: RemoteStoreProtocol? = nil,
          network: NetworkMonitor = NetworkMonitor(),
-         recognizer: TextRecognizing = VisionTextRecognizer()) {
+         recognizer: TextRecognizing = VisionTextRecognizer(),
+         location: LocationProviding = DeviceLocationProvider()) {
         self.persistence = persistence
         self.auth = auth
         self.rates = rates
         self.network = network
         self.recognizer = recognizer
+        self.location = location
         categories = CoreDataCategoryRepository(persistence: persistence)
         expenses = CoreDataExpenseRepository(persistence: persistence)
         budgets = CoreDataBudgetRepository(persistence: persistence)
@@ -40,7 +43,8 @@ final class AppContainer {
     static func preview(withSamples: Bool = true) -> AppContainer {
         let container = AppContainer(persistence: PersistenceController(inMemory: true),
                                      auth: DevAuthService(defaults: UserDefaults(suiteName: "preview") ?? .standard),
-                                     rates: StaticExchangeRateService())
+                                     rates: StaticExchangeRateService(),
+                                     location: StaticLocationProvider())
         if withSamples { SampleData.populate(container) }
         return container
     }
