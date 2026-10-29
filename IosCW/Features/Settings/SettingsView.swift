@@ -32,6 +32,8 @@ struct SettingsView: View {
                     if let email = session.userEmail {
                         LabeledContent("Signed in as", value: email)
                     }
+                    LabeledContent("Sign-in service",
+                                   value: FirebaseDiagnosis.problem == nil ? "Firebase" : "This phone only")
                     Button("Sign out", role: .destructive) {
                         confirmingSignOut = true
                     }
@@ -92,7 +94,7 @@ struct SettingsView: View {
                     Text("Cloud sync")
                 } footer: {
                     if case .notConfigured = sync.status {
-                        Text("Add the Firebase Firestore package to turn on cloud sync. Until then everything is saved on this phone only.")
+                        Text("Cloud sync is off, so everything is saved on this phone only. \(FirebaseDiagnosis.problem ?? "Restart the app and try again.")")
                     } else {
                         Text("Changes save on this phone first and upload automatically when you're online.")
                     }
