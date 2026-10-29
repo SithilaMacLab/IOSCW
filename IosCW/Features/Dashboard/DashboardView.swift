@@ -17,6 +17,7 @@ struct DashboardView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             summaryCards
+                            forecastCard
                             categoryCard
                             placesCard
                             trendCard
@@ -48,6 +49,38 @@ struct DashboardView: View {
             }
             SummaryTile(title: "Balance", value: viewModel.balance,
                         systemImage: "scalemass.fill", tint: viewModel.balance >= 0 ? .blue : .orange)
+        }
+    }
+
+    private var forecastCard: some View {
+        ChartCard(title: "Predicted and actual") {
+            switch viewModel.forecast {
+            case .notEnoughData(let months, let needed):
+                Label("Not enough data yet. The forecast needs spending in each of the last \(needed) months, and you have \(months).",
+                      systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            case .ready(let result):
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Expected spending")
+                        Spacer()
+                        Text(CurrencyFormatter.lkr(result.expenses.expected))
+                            .font(.headline.monospacedDigit())
+                    }
+                    .font(.subheadline)
+
+                    ProgressView(value: result.expenses.progress)
+                        .tint(.red)
+                        .accessibilityLabel("Spent so far compared with the forecast")
+                        .accessibilityValue("\(Int((result.expenses.progress * 100).rounded())) percent")
+
+                    Text("Spent so far \(CurrencyFormatter.lkr(result.expenses.soFar)). Open the Forecast tab for the full picture.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
     }
 
@@ -191,7 +224,7 @@ private struct SummaryTile: View {
     }
 }
 
-private struct ChartCard<Content: View>: View {
+struct ChartCard<Content: View>: View {
     let title: String
     @ViewBuilder var content: Content
 

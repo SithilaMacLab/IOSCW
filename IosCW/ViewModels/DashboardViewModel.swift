@@ -16,6 +16,7 @@ final class DashboardViewModel: ObservableObject {
     @Published private(set) var trend: [TrendPoint] = []
     @Published private(set) var hasAnyTransactions = false
     @Published private(set) var topAreas: [AreaTotal] = []
+    @Published private(set) var forecast: ForecastOutcome = ForecastEngine.empty
 
     private let repository: ExpenseRepositoryProtocol
     private var observer: AnyCancellable?
@@ -34,6 +35,7 @@ final class DashboardViewModel: ObservableObject {
         monthIncome = SpendingStats.total(of: .income, in: transactions)
         monthExpenses = SpendingStats.total(of: .expense, in: transactions)
         categoryTotals = SpendingStats.expensesByCategory(transactions)
+        forecast = ForecastEngine.forecast(transactions.map { ForecastEntry($0) })
         topAreas = Array(SpendingAreas.rank(transactions, since: MapPeriod.thisMonth.startDate()).prefix(3))
         trend = SpendingStats.monthlyTrend(transactions).flatMap { month in
             [TrendPoint(month: month.month, kind: "Income", amount: month.income),

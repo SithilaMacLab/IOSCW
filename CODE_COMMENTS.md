@@ -134,3 +134,20 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **DashboardView.swift**: a "Where you spend" card shows this month's top three areas and links to the map.
 - **SampleData.swift**: sample expenses are spread over seven Colombo areas so the map has something to show.
 - **Info.plist**: `INFOPLIST_KEY_NSLocationWhenInUseUsageDescription` was added to both build configurations. Without it the location request fails silently.
+
+## Monthly forecast
+
+- **What it predicts**: this month's income, this month's spending, and this month's spending per category, learned from the last 3 full months. This is what the proposal describes; it is not a prediction of the next 3 months. The Forecast tab (`ForecastView.swift`) shows it, and the Dashboard has a small "Predicted and actual" card.
+- **Not enough data**: the forecast only runs when each of the last 3 calendar months contains at least one expense. Otherwise both screens say "Not enough data yet" and how many of the 3 months have data. Income alone does not count. The sample data (Settings, Developer) creates 4 months so the screen can be demonstrated.
+- **ForecastEngine.swift**: pure functions on plain `ForecastEntry` values (a copy of the fields it needs), so it can be unit tested without Core Data. The method, for income, expenses and every category separately:
+  1. Add up what was recorded so far this month. That is the "actual".
+  2. For each of the 3 previous months, add up what was recorded after the same day of the month (day 12 this month means everything after day 12 last month, and so on; short months are clamped to their last day). That is how much the month still had to come at this point.
+  3. Take a weighted average of those 3 numbers, with weights 1, 2 and 3 for the oldest to the newest month, so recent behaviour counts more.
+  4. Expected for the month = actual so far + that average.
+  5. The "likely between" range is actual so far plus the smallest and the largest of the 3 leftovers.
+- **Why not "average month"**: an average month would be wrong for income. A salary paid on day 1 is already in "so far", and the earlier months also had it before the cutoff, so nothing extra is added. On the last day of the month the leftover is zero and the forecast equals the actual.
+- **Categories**: grouped by category id. Categories with an expected amount of zero are hidden. They are sorted by expected amount.
+- **Early warnings** (`ForecastViewModel.swift`): a warning shows when expected spending is above expected income (only if some income is expected), and for each category whose expected amount is above its budget limit. Warnings use an icon and text, never colour alone. Category rows with a budget show the forecast status using the same on track, near limit (80%) and over budget (100%) rules as the Budgets tab.
+- **Chart**: bars for the last 3 months and this month. This month's bar is stacked: solid for spent so far, pale for the expected rest. The legend names both, and the chart has a spoken summary for VoiceOver.
+- **Offline and privacy**: everything is calculated on the phone from the local database and nothing is sent anywhere.
+- **Other edits**: `ChartCard` in `DashboardView.swift` is no longer private so the Forecast screen can reuse it. `ContentView.swift` now passes the container to `ForecastView`.

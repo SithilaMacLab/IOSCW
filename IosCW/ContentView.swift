@@ -14,7 +14,7 @@ struct ContentView: View {
             BudgetsView(container: container)
                 .tabItem { Label("Budgets", systemImage: "target") }
 
-            ForecastView()
+            ForecastView(container: container)
                 .tabItem { Label("Forecast", systemImage: "chart.line.uptrend.xyaxis") }
 
             SettingsView(container: container)
