@@ -5,6 +5,7 @@ struct RootView: View {
     @StateObject private var session: AuthViewModel
     @StateObject private var lock = AppLockViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
 
     init(container: AppContainer) {
         self.container = container
@@ -45,6 +46,7 @@ struct RootView: View {
         .environmentObject(lock)
         .environmentObject(container.sync)
         .animation(.easeInOut(duration: 0.2), value: showsLock)
+        .preferredColorScheme(AppearanceMode.resolve(appearanceRaw).colorScheme)
         .task {
             container.sync.sessionChanged()
             container.widget.publish()

@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var loadedSamples = false
     @State private var confirmingSignOut = false
     @State private var showingDelete = false
+    @AppStorage(AppearanceMode.storageKey) private var appearanceRaw = AppearanceMode.system.rawValue
 
     init(container: AppContainer) {
         self.container = container
@@ -52,6 +53,19 @@ struct SettingsView: View {
                         confirmingSignOut = true
                     }
                     .frame(minHeight: 44)
+                }
+
+                Section {
+                    Picker("Appearance", selection: $appearanceRaw) {
+                        ForEach(AppearanceMode.allCases) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("System follows your phone's Light or Dark setting.")
                 }
 
                 Section("Manage") {

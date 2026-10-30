@@ -234,24 +234,23 @@ private struct SummaryTile: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.title2)
-                .foregroundStyle(tint)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.body)
+                    .foregroundStyle(tint)
+                    .accessibilityHidden(true)
                 Text(title)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text(CurrencyFormatter.lkr(value))
-                    .font(.headline.monospacedDigit())
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             }
-            Spacer(minLength: 0)
+            Text(CurrencyFormatter.lkr(value))
+                .font(.headline.monospacedDigit())
+                .minimumScaleFactor(0.5)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .combine)
     }

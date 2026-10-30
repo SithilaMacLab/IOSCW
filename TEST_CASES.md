@@ -8,7 +8,7 @@ This file is not bundled into the app. It lists what to test, how to run the aut
 |---|---|---|---|
 | **Unit tests** (automated) | The logic with no screens: receipt parser, budgets, forecast, next-month model, budget plan, currency, sync rules, CSV, delete account and more | more than 150 | Command-U |
 | **UI tests** (automated) | The real screens, tapped like a user: sign-in screens, tabs, adding a transaction, sample data, forecast and budget plan, sign out | 6 | Command-U |
-| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 135 | By hand, record the result |
+| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 137 | By hand, record the result |
 
 ## 2. How to run the automated tests
 
@@ -272,6 +272,8 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | UI-06 | Landscape | Rotate the phone | Layouts still work | | |
 | UI-07 | Touch size | Try every button with a thumb | Nothing is too small to tap | | |
 | UI-08 | Warnings not only colour | Look at Over budget, Offline, Problem | Each has an icon and a word | | |
+| UI-09 | Appearance setting | Settings, Appearance, choose Light, then Dark, then System | Whole app switches at once, including sheets and the sign-in screens. System follows the phone. | Unit: AppearanceModeTests | |
+| UI-10 | Amounts are never cut off | Dashboard with an amount of 150,000 or more, on the smallest iPhone and at a large text size | Income, Spent and Balance show the whole amount (it may shrink) with no "..." | | |
 
 ## 5. Results summary
 
@@ -292,8 +294,8 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | Sync | 18 | | | |
 | Widget | 5 | | | |
 | Export and delete | 9 | | | |
-| Look and accessibility | 8 | | | |
-| **Total** | **135** | | | |
+| Look and accessibility | 10 | | | |
+| **Total** | **137** | | | |
 
 Automated: unit tests passed ____ of ____, UI tests passed ____ of 6, on ________ (date).
 

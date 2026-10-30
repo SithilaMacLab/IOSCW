@@ -285,7 +285,7 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 
 ## Testing
 
-- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 135 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
+- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 137 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
 - **Unit tests** are in `TestSource/` and need a Unit Testing Bundle target named `IosCWTests`. **UI tests** are in `UITestSource/` and need a UI Testing Bundle target named `IosCWUITests`. Both folders sit outside `IosCW/` so they are not bundled into the app.
 - **UI test mode** (`AppContainer.swift`): launching with `-uitest` makes the app use a local sign-in, an in-memory database, fixed exchange rates and a fixed location, and switches the app lock off, so every UI test starts from a clean state and never touches real data or Firebase. `-uitest-signedin` also skips the sign-in screens. In normal use these flags are never set. The "Load sample data" step in one UI test needs a Debug build.
 - The UI tests drive the iPhone tab bar, so run them on an iPhone simulator.
@@ -327,3 +327,9 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 ## Card layout
 
 - The Dashboard, Forecast, Next month and Budget plan screens place their cards with `MasonryLayout` (`Features/Shared/MasonryLayout.swift`): each card goes into whichever column is currently shortest, so the tops line up and there are no ragged gaps, as a plain grid left when cards had different heights. It makes as many columns as fit (at least 340 points each), so it is one column on iPhone and two or more on iPad. The month's Income, Spent and Balance now sit together in one card.
+
+## Dashboard tiles and Light / Dark mode
+
+- **Amounts cut off**: in the Income and Spent tiles the icon sat beside the text and used up too much width, so amounts like "LKR 150,000.00" were shortened to "LKR 150,00...". Each tile now has the icon and label on a top row and the amount on its own line using the full tile width. If the amount still does not fit it shrinks (down to half size) instead of being cut off, and at the largest accessibility text sizes it wraps.
+- **Appearance setting**: Settings has a new Appearance section with System, Light and Dark. The choice is saved on the phone (`AppearanceMode`, key `appearanceMode`) and applied once at the top of the app (`RootView`), so it covers every tab, sheet and the sign-in screens. System follows the phone's own setting. An unknown saved value falls back to System. It is a device preference, so signing out or switching users does not change it.
+- **Dark mode review**: all backgrounds and text use iOS system colours, which adapt by themselves. The only fixed colour is white text on coloured category circles, which stays readable in both modes. The app icon also has a dark version.
