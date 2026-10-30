@@ -285,7 +285,20 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 
 ## Testing
 
-- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 125 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
+- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 131 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
 - **Unit tests** are in `TestSource/` and need a Unit Testing Bundle target named `IosCWTests`. **UI tests** are in `UITestSource/` and need a UI Testing Bundle target named `IosCWUITests`. Both folders sit outside `IosCW/` so they are not bundled into the app.
 - **UI test mode** (`AppContainer.swift`): launching with `-uitest` makes the app use a local sign-in, an in-memory database, fixed exchange rates and a fixed location, and switches the app lock off, so every UI test starts from a clean state and never touches real data or Firebase. `-uitest-signedin` also skips the sign-in screens. In normal use these flags are never set. The "Load sample data" step in one UI test needs a Debug build.
 - The UI tests drive the iPhone tab bar, so run them on an iPhone simulator.
+
+## Who owns the data on the phone (sign out and switching users)
+
+- **The rule**: the data on a phone always belongs to exactly one user. It is never shown to, or uploaded for, anyone else. The owner is remembered (`syncOwnerUserID`) and checked every time someone signs in.
+- **When a user signs in** (`SyncEngine.claimLocalData`, called by `AuthViewModel` before the app screens open, so the old data is never visible, not even for a moment):
+  - Same user as the owner: nothing changes.
+  - A different user: everything on the phone is erased (transactions, budgets, custom categories, receipt photos, the saved forecast model, the savings goal) and the default categories are put back.
+  - No known owner but data exists (for example test data from an older build): it is treated as foreign and erased, so it is never uploaded into the new user's cloud account.
+  - This runs whether or not Firebase is set up. Before, it only ran when cloud sync was on.
+- **When a user signs out** (`SyncEngine.userSignedOut`): with cloud sync on, the phone is erased straight away, because the full copy is in the cloud and comes back at the next sign in. With cloud sync off the data is kept, because the phone holds the only copy. A different user signing in later still erases it.
+- **Changes not uploaded yet**: erasing on sign out would lose them, so the sign out dialog says how many changes are waiting and offers "Sync now" or "Sign out and lose these changes". With nothing waiting it explains that the data is safe in the cloud.
+- **Returning user**: when an erase happens the "last downloaded" times for every user are forgotten too. Before, they were kept, so a user who came back would only download changes made since their last visit and miss older records.
+- **Delete account** uses the same erase steps, plus deleting the cloud copy and the account.

@@ -8,9 +8,15 @@ final class AuthViewModel: ObservableObject {
     @Published var infoMessage: String?
 
     private let service: AuthServiceProtocol
+    private let beforeSignIn: ((String) -> Void)?
+    private let afterSignOut: (() -> Void)?
 
-    init(service: AuthServiceProtocol) {
+    init(service: AuthServiceProtocol,
+         beforeSignIn: ((String) -> Void)? = nil,
+         afterSignOut: (() -> Void)? = nil) {
         self.service = service
+        self.beforeSignIn = beforeSignIn
+        self.afterSignOut = afterSignOut
         isSignedIn = service.isSignedIn
     }
 
@@ -37,7 +43,7 @@ final class AuthViewModel: ObservableObject {
         }
         let cleaned = AuthValidator.normalized(email)
         if await perform({ try await self.service.signIn(email: cleaned, password: password) }) {
-            isSignedIn = service.isSignedIn
+            completeSignIn()
         }
     }
 
@@ -51,7 +57,7 @@ final class AuthViewModel: ObservableObject {
         }
         let cleaned = AuthValidator.normalized(email)
         if await perform({ try await self.service.register(email: cleaned, password: password) }) {
-            isSignedIn = service.isSignedIn
+            completeSignIn()
         }
     }
 
@@ -71,10 +77,18 @@ final class AuthViewModel: ObservableObject {
         clearMessages()
         do {
             try service.signOut()
+            afterSignOut?()
             isSignedIn = service.isSignedIn
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func completeSignIn() {
+        if let userID = service.currentUserID {
+            beforeSignIn?(userID)
+        }
+        isSignedIn = service.isSignedIn
     }
 
     private func perform(_ work: () async throws -> Void) async -> Bool {

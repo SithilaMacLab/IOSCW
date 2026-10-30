@@ -15,6 +15,20 @@ struct SettingsView: View {
         _export = StateObject(wrappedValue: ExportViewModel(expenses: container.expenses))
     }
 
+    private var hasUnsyncedChanges: Bool {
+        container.sync.isCloudEnabled && sync.pendingCount > 0
+    }
+
+    private var signOutMessage: String {
+        if hasUnsyncedChanges {
+            return "\(sync.pendingCount) \(sync.pendingCount == 1 ? "change has" : "changes have") not been uploaded yet. Signing out clears this phone, so connect to the internet and sync first or they will be lost."
+        }
+        if container.sync.isCloudEnabled {
+            return "Your data is safe in the cloud. It is removed from this phone when you sign out and comes back when you sign in again."
+        }
+        return "Cloud sync is off, so your data stays on this phone. Signing in as a different user will erase it."
+    }
+
     private var exportErrorBinding: Binding<Bool> {
         Binding(get: { export.errorMessage != nil },
                 set: { if !$0 { export.errorMessage = nil } })
@@ -141,8 +155,15 @@ struct SettingsView: View {
             .confirmationDialog("Sign out of \(AppConstants.appName)?",
                                 isPresented: $confirmingSignOut,
                                 titleVisibility: .visible) {
-                Button("Sign out", role: .destructive) { session.signOut() }
+                if hasUnsyncedChanges {
+                    Button("Sync now") { sync.syncNow() }
+                    Button("Sign out and lose these changes", role: .destructive) { session.signOut() }
+                } else {
+                    Button("Sign out", role: .destructive) { session.signOut() }
+                }
                 Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(signOutMessage)
             }
             .sheet(isPresented: $export.isSharing) {
                 if let url = export.fileURL {

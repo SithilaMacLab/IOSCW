@@ -121,11 +121,24 @@ final class SyncEngine: ObservableObject {
         isSuspended = false
     }
 
-    func forgetAccount(userID: String) {
-        let prefix = "syncLastPull.\(userID)."
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
-            defaults.removeObject(forKey: key)
+    var isCloudEnabled: Bool { remote != nil }
+
+    func claimLocalData(for userID: String) {
+        prepareLocalData(for: userID)
+    }
+
+    func userSignedOut() {
+        debounceTask?.cancel()
+        retryTask?.cancel()
+        if remote != nil {
+            eraseLocalData()
+            defaults.removeObject(forKey: ownerKey)
         }
+        status = remote == nil ? .notConfigured : .signedOut
+    }
+
+    func forgetAccount(userID: String) {
+        forgetPullHistory()
         defaults.removeObject(forKey: ownerKey)
         defaults.removeObject(forKey: lastSyncedKey)
         defaults.removeObject(forKey: NextMonthModelStore.key)
@@ -136,17 +149,17 @@ final class SyncEngine: ObservableObject {
     }
 
     private func startSession() -> Bool {
+        guard let userID = auth.currentUserID else {
+            debounceTask?.cancel()
+            retryTask?.cancel()
+            status = remote == nil ? .notConfigured : .signedOut
+            return false
+        }
+        prepareLocalData(for: userID)
         guard remote != nil else {
             status = .notConfigured
             return false
         }
-        guard let userID = auth.currentUserID else {
-            debounceTask?.cancel()
-            retryTask?.cancel()
-            status = .signedOut
-            return false
-        }
-        prepareLocalData(for: userID)
         return true
     }
 
@@ -311,15 +324,44 @@ final class SyncEngine: ObservableObject {
         let owner = defaults.string(forKey: ownerKey)
         guard owner != userID else { return }
 
-        if owner != nil {
-            try? persistence.wipeAll()
-            try? categories.seedDefaultsIfNeeded()
-            defaults.removeObject(forKey: NextMonthModelStore.key)
-            lastSyncedAt = nil
-            defaults.removeObject(forKey: lastSyncedKey)
+        if owner != nil || hasLocalUserData() {
+            eraseLocalData()
         }
         defaults.set(userID, forKey: ownerKey)
         refreshPending()
+    }
+
+    private func hasLocalUserData() -> Bool {
+        let context = persistence.viewContext
+        for name in ["Expense", "Budget"] {
+            let request = NSFetchRequest<NSManagedObject>(entityName: name)
+            request.fetchLimit = 1
+            if ((try? context.count(for: request)) ?? 0) > 0 { return true }
+        }
+        let custom = NSFetchRequest<NSManagedObject>(entityName: "ExpenseCategory")
+        custom.predicate = NSPredicate(format: "isDefault == NO")
+        custom.fetchLimit = 1
+        return ((try? context.count(for: custom)) ?? 0) > 0
+    }
+
+    private func eraseLocalData() {
+        debounceTask?.cancel()
+        retryTask?.cancel()
+        try? persistence.wipeAll()
+        try? categories.seedDefaultsIfNeeded()
+        forgetPullHistory()
+        defaults.removeObject(forKey: lastSyncedKey)
+        defaults.removeObject(forKey: NextMonthModelStore.key)
+        defaults.removeObject(forKey: BudgetPlanViewModel.rateKey)
+        lastSyncedAt = nil
+        retryDelay = 5
+        refreshPending()
+    }
+
+    private func forgetPullHistory() {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("syncLastPull.") {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     private func lastPull(_ kind: SyncKind, userID: String) -> Date? {

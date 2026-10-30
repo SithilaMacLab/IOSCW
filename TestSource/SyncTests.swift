@@ -192,6 +192,15 @@ struct SyncFixture {
         return try #require(expenses.fetchAll().first)
     }
 
+    func makeEngine(remote: RemoteStoreProtocol?, defaults: UserDefaults = isolatedDefaults()) -> SyncEngine {
+        SyncEngine(persistence: persistence,
+                   remote: remote,
+                   auth: auth,
+                   network: network,
+                   categories: categories,
+                   defaults: defaults)
+    }
+
     func expenseRowCount() throws -> Int {
         try persistence.viewContext.count(for: NSFetchRequest<NSManagedObject>(entityName: "Expense"))
     }
@@ -367,6 +376,104 @@ struct SyncEngineTests {
         await fixture.engine.sessionChangedAndWait()
 
         #expect(fixture.expenses.fetchAll().count == 1)
+    }
+
+    @Test("Signing out erases this phone when the data lives in the cloud")
+    func signOutErasesWhenCloudIsOn() async throws {
+        let fixture = try await SyncFixture()
+        await fixture.engine.sessionChangedAndWait()
+        _ = try fixture.addExpense()
+        await fixture.engine.syncAndWait()
+        try fixture.auth.signOut()
+
+        fixture.engine.userSignedOut()
+
+        #expect(fixture.expenses.fetchAll().isEmpty)
+        #expect(try fixture.expenseRowCount() == 0)
+        #expect(fixture.categories.fetchAll().count == CoreDataCategoryRepository.defaults.count)
+        #expect(fixture.engine.pendingCount == 0)
+        #expect(fixture.engine.statusText == "Not signed in")
+    }
+
+    @Test("Without the cloud, signing out keeps the data because it is the only copy")
+    func signOutKeepsDataWithoutCloud() async throws {
+        let fixture = try await SyncFixture()
+        let engine = fixture.makeEngine(remote: nil)
+        engine.sessionChanged()
+        _ = try fixture.addExpense()
+        try fixture.auth.signOut()
+
+        engine.userSignedOut()
+
+        #expect(fixture.expenses.fetchAll().count == 1)
+        #expect(engine.statusText == "Cloud sync is off")
+    }
+
+    @Test("Without the cloud, a different user still never sees the previous user's data")
+    func localOnlyDifferentUser() async throws {
+        let fixture = try await SyncFixture(email: "alice@example.com")
+        let engine = fixture.makeEngine(remote: nil)
+        engine.sessionChanged()
+        _ = try fixture.addExpense()
+        try fixture.auth.signOut()
+        engine.userSignedOut()
+
+        try await fixture.auth.signIn(email: "bob@example.com", password: "Password1")
+        engine.claimLocalData(for: "bob@example.com")
+
+        #expect(fixture.expenses.fetchAll().isEmpty)
+        #expect(fixture.categories.fetchAll().count == CoreDataCategoryRepository.defaults.count)
+    }
+
+    @Test("Without the cloud, the same user keeps the data")
+    func localOnlySameUser() async throws {
+        let fixture = try await SyncFixture(email: "alice@example.com")
+        let engine = fixture.makeEngine(remote: nil)
+        engine.sessionChanged()
+        _ = try fixture.addExpense()
+        try fixture.auth.signOut()
+        engine.userSignedOut()
+
+        try await fixture.auth.signIn(email: "alice@example.com", password: "Password1")
+        engine.claimLocalData(for: "alice@example.com")
+
+        #expect(fixture.expenses.fetchAll().count == 1)
+    }
+
+    @Test("Leftover data with no known owner is erased and never uploaded to the new user")
+    func ownerlessDataIsErased() async throws {
+        let fixture = try await SyncFixture()
+        _ = try fixture.addExpense()
+
+        await fixture.engine.sessionChangedAndWait()
+
+        #expect(fixture.expenses.fetchAll().isEmpty)
+        #expect(fixture.remote.pushed.isEmpty)
+    }
+
+    @Test("A fresh phone with no data keeps the default categories")
+    func freshPhoneKeepsDefaults() async throws {
+        let fixture = try await SyncFixture()
+
+        await fixture.engine.sessionChangedAndWait()
+
+        #expect(fixture.categories.fetchAll().count == CoreDataCategoryRepository.defaults.count)
+    }
+
+    @Test("Erasing forgets earlier downloads, so a returning user gets everything back")
+    func erasingForgetsPullHistory() async throws {
+        let defaults = isolatedDefaults()
+        let fixture = try await SyncFixture(email: "bob@example.com")
+        let engine = fixture.makeEngine(remote: fixture.remote, defaults: defaults)
+        defaults.set("alice@example.com", forKey: "syncOwnerUserID")
+        defaults.set(Date(), forKey: "syncLastPull.alice@example.com.expenses")
+        defaults.set(0.3, forKey: BudgetPlanViewModel.rateKey)
+
+        await engine.sessionChangedAndWait()
+
+        let leftover = defaults.dictionaryRepresentation().keys.filter { $0.hasPrefix("syncLastPull.alice") }
+        #expect(leftover.isEmpty)
+        #expect(defaults.object(forKey: BudgetPlanViewModel.rateKey) == nil)
     }
 
     @Test("Signed out means nothing is uploaded")

@@ -8,7 +8,7 @@ This file is not bundled into the app. It lists what to test, how to run the aut
 |---|---|---|---|
 | **Unit tests** (automated) | The logic with no screens: receipt parser, budgets, forecast, next-month model, budget plan, currency, sync rules, CSV, delete account and more | more than 150 | Command-U |
 | **UI tests** (automated) | The real screens, tapped like a user: sign-in screens, tabs, adding a transaction, sample data, forecast and budget plan, sign out | 6 | Command-U |
-| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 125 | By hand, record the result |
+| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 131 | By hand, record the result |
 
 ## 2. How to run the automated tests
 
@@ -75,7 +75,7 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | AUTH-11 | Sign in | Sign in with the right details | Dashboard opens | | |
 | AUTH-12 | Wrong password | Sign in with a wrong password (Firebase) | "The email or password is incorrect." | | |
 | AUTH-13 | Forgot password | Sign in, Forgot password, enter email | Confirmation message and a reset email arrives (Firebase) | | |
-| AUTH-14 | Sign out | Settings, Sign out, confirm | Welcome screen appears | UI: testSigningOutReturnsToTheWelcomeScreen | |
+| AUTH-14 | Sign out | Settings, Sign out, confirm | Welcome screen appears. With Firebase on, the data is removed from the phone. | UI: testSigningOutReturnsToTheWelcomeScreen, Unit: AuthSessionTests.signOutClears | |
 | AUTH-15 | Firebase is really connected | Settings | "Sign-in service: Firebase". The user shows in Firebase, Authentication, Users | | |
 
 ### 4.2 App lock (real iPhone)
@@ -225,6 +225,12 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | SYNC-10 | Same user | Sign out and in again as the same user | Data is kept | Unit: SyncEngineTests.sameUserKeepsData | |
 | SYNC-11 | Default categories | Sign in on a second phone | No duplicate default categories | Unit: SyncRecordTests.defaultCategoriesMatchAcrossDevices | |
 | SYNC-12 | Not signed in | Sign out and add data offline | Nothing is uploaded | Unit: SyncEngineTests.signedOutDoesNotSync | |
+| SYNC-13 | Sign out erases this phone | User A with data signs out (Firebase on) | Welcome screen. Signing in as B shows an empty app with only the default categories. | Unit: SyncEngineTests.signOutErasesWhenCloudIsOn | |
+| SYNC-14 | New user never sees old data | User A signs out, user B registers on the same phone | B sees no transactions, budgets or custom categories, not even for a moment | Unit: SyncEngineTests.differentUserWipesLocalData, AuthSessionTests.claimsBeforeOpening | |
+| SYNC-15 | Old user gets everything back | After B, sign out and sign A in again | All of A's data downloads again, including old transactions | Unit: SyncEngineTests.erasingForgetsPullHistory | |
+| SYNC-16 | Warning before data is lost | Offline, add a transaction, Settings, Sign out | Dialog says N changes are not uploaded and offers Sync now or Sign out and lose these changes | | |
+| SYNC-17 | Leftover data is not adopted | Phone with old test data, new Firebase user signs in | Old data is erased and nothing is uploaded to the new account | Unit: SyncEngineTests.ownerlessDataIsErased | |
+| SYNC-18 | Cloud off, different user | No Firebase, user A signs out, user B signs in | B sees no data of A | Unit: SyncEngineTests.localOnlyDifferentUser | |
 
 ### 4.14 Widget
 
@@ -279,11 +285,11 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | Forecast, this month | 6 | | | |
 | Next-month forecast | 9 | | | |
 | Budget plan | 8 | | | |
-| Sync | 12 | | | |
+| Sync | 18 | | | |
 | Widget | 5 | | | |
 | Export and delete | 9 | | | |
 | Look and accessibility | 8 | | | |
-| **Total** | **125** | | | |
+| **Total** | **131** | | | |
 
 Automated: unit tests passed ____ of ____, UI tests passed ____ of 6, on ________ (date).
 

@@ -8,7 +8,15 @@ struct RootView: View {
 
     init(container: AppContainer) {
         self.container = container
-        _session = StateObject(wrappedValue: AuthViewModel(service: container.auth))
+        _session = StateObject(wrappedValue: AuthViewModel(
+            service: container.auth,
+            beforeSignIn: { userID in
+                container.sync.claimLocalData(for: userID)
+            },
+            afterSignOut: {
+                container.sync.userSignedOut()
+                container.widget.publish()
+            }))
     }
 
     private var showsLock: Bool { session.isSignedIn && lock.isLocked }
