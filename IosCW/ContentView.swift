@@ -26,9 +26,6 @@ struct ContentView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            SyncBannerView()
-        }
     }
 }
 

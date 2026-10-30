@@ -34,6 +34,7 @@ struct DashboardView: View {
                 }
             }
             .navigationTitle("Dashboard")
+            .syncStatusBadge(container.sync)
         }
     }
 

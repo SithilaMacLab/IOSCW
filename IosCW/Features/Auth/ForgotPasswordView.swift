@@ -1,40 +1,50 @@
 import SwiftUI
 
 struct ForgotPasswordView: View {
+    enum Field: Hashable {
+        case email
+    }
+
     @EnvironmentObject private var session: AuthViewModel
     @State private var email: String
+    @FocusState private var focus: Field?
 
     init(initialEmail: String = "") {
         _email = State(initialValue: initialEmail)
     }
 
     var body: some View {
-        Form {
-            Section {
-                TextField("Email", text: $email)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-            } footer: {
-                Text("We'll email you a link to choose a new password.")
-            }
+        AuthScreen(style: .reset,
+                   title: "Reset your password",
+                   subtitle: "Enter your email and we will send you a link to choose a new password.") {
+            VStack(spacing: 14) {
+                AuthTextField(title: "Email",
+                              text: $email,
+                              systemImage: "envelope.fill",
+                              contentType: .emailAddress,
+                              keyboard: .emailAddress,
+                              submitLabel: .send,
+                              focus: $focus,
+                              field: .email)
 
-            Section {
                 AuthMessageView(session: session)
-            }
 
-            Section {
-                AuthSubmitButton(title: "Send reset link",
-                                 isWorking: session.isWorking,
-                                 isEnabled: !email.isEmpty) {
-                    Task { await session.sendPasswordReset(email: email) }
+                AuthPrimaryButton(title: "Send reset link",
+                                  isWorking: session.isWorking,
+                                  isEnabled: !email.isEmpty) {
+                    send()
                 }
             }
         }
-        .navigationTitle("Reset password")
-        .navigationBarTitleDisplayMode(.inline)
+        .onSubmit {
+            if !email.isEmpty { send() }
+        }
         .onAppear { session.clearMessages() }
+    }
+
+    private func send() {
+        focus = nil
+        Task { await session.sendPasswordReset(email: email) }
     }
 }
 

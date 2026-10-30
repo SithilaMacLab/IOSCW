@@ -90,6 +90,7 @@ struct ActivityView: View {
             }
         }
         .navigationTitle("Activity")
+        .syncStatusBadge(container.sync)
         .searchable(text: $viewModel.filter.searchText, prompt: "Search merchant, note or category")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

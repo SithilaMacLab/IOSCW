@@ -3,10 +3,12 @@ import SwiftUI
 
 struct ForecastView: View {
     @StateObject private var viewModel: ForecastViewModel
+    private let sync: SyncEngine
 
     private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
 
     init(container: AppContainer) {
+        sync = container.sync
         _viewModel = StateObject(wrappedValue: ForecastViewModel(expenses: container.expenses,
                                                                  budgets: container.budgets))
     }
@@ -38,6 +40,7 @@ struct ForecastView: View {
                 }
             }
             .navigationTitle("Forecast")
+            .syncStatusBadge(sync)
         }
     }
 

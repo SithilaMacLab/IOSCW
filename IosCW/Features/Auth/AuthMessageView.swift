@@ -5,39 +5,25 @@ struct AuthMessageView: View {
 
     var body: some View {
         if let message = session.errorMessage {
-            Label(message, systemImage: "exclamationmark.triangle.fill")
-                .font(.subheadline)
-                .foregroundStyle(.red)
+            banner(message, symbol: "exclamationmark.triangle.fill", color: .red)
                 .accessibilityAddTraits(.updatesFrequently)
         }
         if let message = session.infoMessage {
-            Label(message, systemImage: "checkmark.circle.fill")
-                .font(.subheadline)
-                .foregroundStyle(.green)
+            banner(message, symbol: "checkmark.circle.fill", color: .green)
         }
     }
-}
 
-struct AuthSubmitButton: View {
-    let title: String
-    let isWorking: Bool
-    let isEnabled: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Spacer()
-                if isWorking {
-                    ProgressView()
-                } else {
-                    Text(title)
-                        .bold()
-                }
-                Spacer()
-            }
-            .frame(minHeight: 44)
+    private func banner(_ message: String, symbol: String, color: Color) -> some View {
+        Label {
+            Text(message)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: symbol)
+                .foregroundStyle(color)
         }
-        .disabled(!isEnabled || isWorking)
+        .font(.subheadline)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }

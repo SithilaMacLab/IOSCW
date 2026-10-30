@@ -137,6 +137,7 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("Settings")
+            .syncStatusBadge(container.sync)
             .confirmationDialog("Sign out of \(AppConstants.appName)?",
                                 isPresented: $confirmingSignOut,
                                 titleVisibility: .visible) {

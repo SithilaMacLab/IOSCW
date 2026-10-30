@@ -49,6 +49,7 @@ struct BudgetsView: View {
                 }
             }
             .navigationTitle("Budgets")
+            .syncStatusBadge(container.sync)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {

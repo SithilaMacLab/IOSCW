@@ -97,7 +97,7 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **NetworkMonitor.swift**: wraps `NWPathMonitor`. Online means the path is satisfied.
 - **Timeout.swift**: races an operation against a timer. Also holds the small `chunked(into:)` helper.
 - **StableID.swift**: makes the same UUID from the same text (SHA-256, version 5 layout).
-- **SyncBannerView.swift**: shows "Offline" with the number of changes waiting, then "Syncing", then "Synced" for 3 seconds. It shows nothing when idle.
+- **SyncBadgeView.swift** (replaces the old full-width banner, see "Sign-in screens and sync badge" below).
 - **PersistenceController.swift**: `save(notify:)` can skip the change notification; the sync engine uses that when it only flips sync states. `wipeAll()` clears all three tables.
 
 ## Receipt scanning
@@ -218,3 +218,23 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 2. Move the generated `IosCWTests.swift` (and any UI test files) to the Trash.
 3. In Finder copy all the files from `TestSource/` into the `IosCWTests` folder. Xcode picks them up by itself. If it does not, drag them in and tick only the test target.
 4. Press Command-U to run all tests. Each test name appears in the Test navigator.
+
+## Sign-in screens and sync badge
+
+### Sign-in screens
+- **Flow**: Welcome, then Create account or Sign in. Sign in has "Forgot password?". The "Sign in" and "Create account" links at the bottom of those two screens swap one for the other, so the back stack never grows into a loop. `WelcomeView` owns the navigation path (`AuthRoute`: login, register, forgot) and hands each screen an `AuthActions` with `go` and `replace`.
+- **AuthComponents.swift** holds the shared pieces:
+  - `AuthHeroView`: the big illustration, drawn in code from shapes and SF Symbols (no image files): a soft circle, a dashed ring, a tilted gradient tile with the main icon, and small floating chips. Each screen has its own icon and chips (welcome: scan, chart, map pin; sign in: lock and Face ID; register: person with plus; reset: envelope and key). The chips drift slowly, which is switched off when Reduce Motion is on. It is hidden from VoiceOver and shrinks at the accessibility text sizes.
+  - `AuthScreen`: the page frame (gradient background, hero, title, subtitle, scrolling content, width limited to 480 for iPad). The keyboard hides when the user scrolls.
+  - `AuthTextField` and `AuthPasswordField`: rounded fields with a leading icon, a highlight ring on the field that has focus, and a show or hide eye button on password fields (44 point tap area). Pressing Return moves to the next field, and on the last field it submits.
+  - `AuthPrimaryButton`: a full-width prominent button with a spinner while working.
+  - `RequirementRow`: the live checklist on Create account (8 characters, a letter and a number, passwords match). Each row has an icon and text, so it is not colour only.
+- **AuthMessageView.swift**: errors and confirmations are now soft coloured cards with an icon. `AuthSubmitButton` was removed.
+- The checks themselves have not changed (`AuthValidator`), only how they are shown.
+
+### Sync badge (replaces the sync banner)
+- **Why**: the old banner was a full-width strip that pushed the whole screen down while syncing. It is now a small badge in the top right corner of every tab (Dashboard, Activity, Budgets, Forecast, Settings), inside the navigation bar, so nothing moves and nothing is covered.
+- **States**: Synced (green check cloud), Online (blue cloud, before the first sync), Syncing (spinner), Offline with the number of changes waiting (orange crossed-out cloud), Problem (red), and This phone (grey, when cloud sync is off). Each state has an icon and a word, so colour is never the only signal.
+- **Details**: tapping the badge opens a small popover with a plain sentence about the state, how many changes are waiting, when it last synced, and a Sync now button. It stays a popover on iPhone too.
+- **SyncBadgeView.swift** also has `syncStatusBadge(_:)`, a one-line modifier that adds the badge as a toolbar item. The badge is given the sync engine directly, so screen previews work without extra setup.
+- VoiceOver reads "Sync status: Offline" with the hint "Shows details".
