@@ -1,8 +1,10 @@
 import Foundation
 
 final class DevAuthService: AuthServiceProtocol {
+    static let storageKey = "devAuthEmail"
+
     private let defaults: UserDefaults
-    private let key = "devAuthEmail"
+    private let key = DevAuthService.storageKey
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

@@ -26,7 +26,7 @@ enum SampleData {
         let calendar = Calendar.current
         let now = Date()
 
-        for monthOffset in 0..<4 {
+        for monthOffset in 0..<9 {
             guard let monthStart = calendar.date(byAdding: .month, value: -monthOffset,
                                                  to: calendar.dateInterval(of: .month, for: now)?.start ?? now)
             else { continue }

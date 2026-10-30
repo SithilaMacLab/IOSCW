@@ -40,6 +40,7 @@ struct RootView: View {
         .task {
             container.sync.sessionChanged()
             container.widget.publish()
+            container.predictor.refresh()
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -48,6 +49,7 @@ struct RootView: View {
             case .active:
                 container.sync.appBecameActive()
                 container.widget.publish()
+                container.predictor.refresh()
                 if showsLock {
                     Task { await lock.unlock() }
                 }

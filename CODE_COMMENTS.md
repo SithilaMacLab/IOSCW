@@ -238,3 +238,54 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **Details**: tapping the badge opens a small popover with a plain sentence about the state, how many changes are waiting, when it last synced, and a Sync now button. It stays a popover on iPhone too.
 - **SyncBadgeView.swift** also has `syncStatusBadge(_:)`, a one-line modifier that adds the badge as a toolbar item. The badge is given the sync engine directly, so screen previews work without extra setup.
 - VoiceOver reads "Sync status: Offline" with the hint "Shows details".
+
+## Next-month forecast and budget plan (on-device learning)
+
+### What it is
+- A small supervised regression model that is trained on the user's own monthly totals, retrained every month, and used to predict next month's income, spending and spending per category. A budget plan is then built from the forecast. Nothing is sent anywhere. It is not a neural network: with only a handful of monthly data points a simple model is the correct choice, and every number can be checked by hand.
+- The existing "This month" forecast (`ForecastEngine.swift`) is unchanged. The Forecast tab now has a "This month / Next month" switch.
+
+### How the model is trained (`NextMonthPredictor.swift`)
+1. **Data**: for each completed month (the current month is left out because it is not finished), the total spending per category and the total income. At most 24 months are used. The forecast needs spending in each of the last 3 months, the same rule as the "This month" forecast.
+2. **Five candidate methods**, each predicts the next value from the earlier months of one series:
+   - Weighted average of the last 3 months (weights 1, 2, 3, the default).
+   - Plain average of the last 3 months.
+   - Same as last month.
+   - Exponential smoothing (each new month counts half).
+   - Trend line: a least-squares line through the last 6 months, with the slope shrunk by 20% (ridge regularisation) so one odd month cannot throw it far, never below zero and never above 1.5 times the highest recent month.
+3. **Backtesting (walk-forward validation)**: for every past month from the 4th onward, the method predicts that month using only the months before it, and the error is compared with what really happened. The score is the weighted absolute percentage error: the sum of the absolute errors divided by the sum of the real values. Months with no spending cannot cause a divide-by-zero.
+4. **Choosing**: with 6 or more months of history the five methods compete and the one with the smallest backtest error is kept per category. A method must beat the default by at least 5% to replace it, so noise does not make the choice jump around. With fewer months the default is used.
+5. **Learning phases** (`LearningPhase`): 3 months = basic (no accuracy yet), 4 to 5 months = early (accuracy is an early estimate from 1 or 2 tests), 6 or more months = learned (methods compete). The screen says which phase applies and why.
+6. **Forecast and range**: next month's value per category. The total is the sum of the categories. The range is the value plus or minus the backtest error (at least 5%). With no backtest yet the range is the smallest and largest of the last 3 months.
+7. **Accuracy shown to the user**: "Past predictions were off by about N% on average, tested on K past months". For the total it combines each category's chosen method. Because the methods were chosen using the same past months, this is slightly optimistic. It is still a fair guide, not a guarantee.
+
+### Training every month (`NextMonthModelService.swift`)
+- The trained result (chosen method, accuracy and forecast per series) is saved as JSON in `UserDefaults` together with a fingerprint: the current month plus the count and totals of the completed months. The model is retrained when the fingerprint changes, which means in a new month or when a past transaction is added, edited, deleted or synced. Otherwise the saved model is reused. This check runs whenever the app opens or comes to the foreground and when data changes.
+- It does not use a background task. iOS decides when background tasks run, so they are not reliable. Training takes milliseconds, so doing it on app open is simple and dependable.
+- The saved model is cleared when the user changes, on delete account, and when the history is not enough.
+
+### Budget plan (`BudgetPlanner.swift`)
+- This part is ordinary arithmetic, not learning, on purpose, so it is easy to explain.
+- The user chooses a savings goal from 0% to 50% of the expected income (default 20%, remembered).
+- Essentials are groceries, transport, bills and utilities, health and education. Everything else, including custom categories, is flexible.
+- Essentials keep the forecast plus a 5% buffer, rounded up to 100, and are never cut.
+- If expected spending is above income minus the goal, only the flexible categories are scaled down by the same factor, never below 60% of their normal level. Limits are rounded to the nearest 100 and are at least 100.
+- If the goal cannot be reached even at the 60% floor, the screen says so and shows the closest achievable saving and how far short it is. If no income was recorded, there is no goal and the limits follow the forecast.
+- "Apply as my budgets" asks for confirmation, then sets the monthly limit for each category in the plan (existing limits for those categories are replaced, other budgets stay). Uncategorised spending has no category, so it is skipped.
+
+### Other changes
+- `SampleData.swift` now creates 9 months so the "learned" phase can be demonstrated. Load it on a fresh install, because the sample button works once per run.
+- `SyncEngine.swift` clears the saved model when the local data is wiped.
+- The new tests are `NextMonthPredictorTests.swift`, `NextMonthServiceTests.swift` and `BudgetPlannerTests.swift` in `TestSource/`.
+
+### Limits to be honest about in the report
+- Personal spending is noisy, so the forecast is a guide with a range, not a promise. One-off purchases, bonuses and festivals cannot be predicted.
+- Seasonal patterns (April, December) would need at least 12 months of history and are not modelled.
+- The method choice is only as good as the number of past months. That is why the phases exist.
+
+## Testing
+
+- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 125 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
+- **Unit tests** are in `TestSource/` and need a Unit Testing Bundle target named `IosCWTests`. **UI tests** are in `UITestSource/` and need a UI Testing Bundle target named `IosCWUITests`. Both folders sit outside `IosCW/` so they are not bundled into the app.
+- **UI test mode** (`AppContainer.swift`): launching with `-uitest` makes the app use a local sign-in, an in-memory database, fixed exchange rates and a fixed location, and switches the app lock off, so every UI test starts from a clean state and never touches real data or Firebase. `-uitest-signedin` also skips the sign-in screens. In normal use these flags are never set. The "Load sample data" step in one UI test needs a Debug build.
+- The UI tests drive the iPhone tab bar, so run them on an iPhone simulator.

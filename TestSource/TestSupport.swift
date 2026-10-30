@@ -142,3 +142,27 @@ final class FakeWidget: WidgetPublishing {
 
     func publish() { log.events.append("widget.publish") }
 }
+
+@MainActor
+func monthlyEntries(_ amounts: [Double],
+                    now: Date,
+                    category: String = "food",
+                    type: TransactionType = .expense) -> [ForecastEntry] {
+    let calendar = TestClock.calendar
+    let currentStart = calendar.dateInterval(of: .month, for: now)!.start
+    return amounts.enumerated().map { index, amount in
+        let offset = amounts.count - index
+        let monthStart = calendar.date(byAdding: .month, value: -offset, to: currentStart)!
+        let date = calendar.date(byAdding: .day, value: 9, to: monthStart)!
+        return forecastEntry(date, amount, type: type, category: category)
+    }
+}
+
+@MainActor
+final class ClockBox {
+    var date: Date
+
+    init(_ date: Date) {
+        self.date = date
+    }
+}

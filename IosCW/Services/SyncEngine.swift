@@ -128,6 +128,7 @@ final class SyncEngine: ObservableObject {
         }
         defaults.removeObject(forKey: ownerKey)
         defaults.removeObject(forKey: lastSyncedKey)
+        defaults.removeObject(forKey: NextMonthModelStore.key)
         lastSyncedAt = nil
         isSuspended = false
         refreshPending()
@@ -313,6 +314,7 @@ final class SyncEngine: ObservableObject {
         if owner != nil {
             try? persistence.wipeAll()
             try? categories.seedDefaultsIfNeeded()
+            defaults.removeObject(forKey: NextMonthModelStore.key)
             lastSyncedAt = nil
             defaults.removeObject(forKey: lastSyncedKey)
         }

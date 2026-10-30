@@ -9,7 +9,7 @@ final class AppLockViewModel: ObservableObject {
 
     private let authenticator: BiometricAuthenticating
     private let defaults: UserDefaults
-    private static let enabledKey = "appLockEnabled"
+    static let enabledKey = "appLockEnabled"
 
     init(authenticator: BiometricAuthenticating = LocalBiometricAuthenticator(),
          defaults: UserDefaults = .standard) {

@@ -132,7 +132,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Developer")
                 } footer: {
-                    Text("Adds 4 months of fake transactions and some budgets so you can see the charts. Debug builds only.")
+                    Text("Adds 9 months of fake transactions and some budgets so you can see the charts. Debug builds only.")
                 }
                 #endif
             }

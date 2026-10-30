@@ -1,16 +1,35 @@
 import Charts
 import SwiftUI
 
+private enum ForecastMode: String, CaseIterable, Identifiable {
+    case thisMonth
+    case nextMonth
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .thisMonth: "This month"
+        case .nextMonth: "Next month"
+        }
+    }
+}
+
 struct ForecastView: View {
     @StateObject private var viewModel: ForecastViewModel
+    @StateObject private var nextMonth: NextMonthViewModel
+    @State private var mode: ForecastMode = .thisMonth
+    private let container: AppContainer
     private let sync: SyncEngine
 
     private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
 
     init(container: AppContainer) {
+        self.container = container
         sync = container.sync
         _viewModel = StateObject(wrappedValue: ForecastViewModel(expenses: container.expenses,
                                                                  budgets: container.budgets))
+        _nextMonth = StateObject(wrappedValue: NextMonthViewModel(service: container.predictor))
     }
 
     var body: some View {
@@ -25,14 +44,28 @@ struct ForecastView: View {
                     }
                 case .ready(let result):
                     ScrollView {
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            summaryCard(result)
-                            if !viewModel.alerts.isEmpty {
-                                alertsCard
+                        VStack(spacing: 16) {
+                            Picker("Period", selection: $mode) {
+                                ForEach(ForecastMode.allCases) { option in
+                                    Text(option.title).tag(option)
+                                }
                             }
-                            chartCard(result)
-                            categoryCard
-                            footnote
+                            .pickerStyle(.segmented)
+
+                            switch mode {
+                            case .thisMonth:
+                                LazyVGrid(columns: columns, spacing: 16) {
+                                    summaryCard(result)
+                                    if !viewModel.alerts.isEmpty {
+                                        alertsCard
+                                    }
+                                    chartCard(result)
+                                    categoryCard
+                                    footnote
+                                }
+                            case .nextMonth:
+                                NextMonthSection(viewModel: nextMonth, container: container)
+                            }
                         }
                         .padding()
                     }
