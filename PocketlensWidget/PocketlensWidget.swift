@@ -88,7 +88,7 @@ private extension WidgetSnapshot {
     }
 }
 
-private func tint(for status: BudgetStatus) -> Color {
+private func statusColor(for status: BudgetStatus) -> Color {
     switch status {
     case .onTrack: .green
     case .nearLimit: .orange
@@ -127,10 +127,10 @@ private struct SmallView: View {
 
             if snapshot.hasBudgets {
                 ProgressView(value: min(snapshot.budgetProgress, 1))
-                    .tint(tint(for: snapshot.status))
+                    .tint(statusColor(for: snapshot.status))
                 Label(snapshot.status.title, systemImage: snapshot.status.systemImage)
                     .font(.caption2.bold())
-                    .foregroundStyle(tint(for: snapshot.status))
+                    .foregroundStyle(statusColor(for: snapshot.status))
                 Text("\(snapshot.percentText) of budgets used")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -177,7 +177,7 @@ private struct MediumView: View {
                 if snapshot.hasBudgets {
                     Label(snapshot.status.title, systemImage: snapshot.status.systemImage)
                         .font(.caption2.bold())
-                        .foregroundStyle(tint(for: snapshot.status))
+                        .foregroundStyle(statusColor(for: snapshot.status))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,7 +200,7 @@ private struct MediumView: View {
                             }
                             .font(.caption2)
                             ProgressView(value: min(line.progress, 1))
-                                .tint(tint(for: BudgetStatus(progress: line.progress)))
+                                .tint(statusColor(for: BudgetStatus(progress: line.progress)))
                         }
                         .accessibilityElement(children: .combine)
                     }

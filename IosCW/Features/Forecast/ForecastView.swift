@@ -222,11 +222,11 @@ private struct CategoryOutlookRow: View {
 
             if let limit = outlook.limit, let status = outlook.status {
                 ProgressView(value: min(BudgetMath.progress(spent: outlook.forecast.figure.expected, limit: limit), 1))
-                    .tint(tint(for: status))
+                    .tint(statusColor(for: status))
                 Label("Forecast: \(status.title). Limit \(CurrencyFormatter.lkr(limit)).",
                       systemImage: status.systemImage)
                     .font(.caption)
-                    .foregroundStyle(tint(for: status))
+                    .foregroundStyle(statusColor(for: status))
             } else {
                 Text("So far \(CurrencyFormatter.lkr(outlook.forecast.figure.soFar)). No budget set.")
                     .font(.caption)
@@ -236,7 +236,7 @@ private struct CategoryOutlookRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func tint(for status: BudgetStatus) -> Color {
+    private func statusColor(for status: BudgetStatus) -> Color {
         switch status {
         case .onTrack: .green
         case .nearLimit: .orange
