@@ -302,3 +302,8 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **Changes not uploaded yet**: erasing on sign out would lose them, so the sign out dialog says how many changes are waiting and offers "Sync now" or "Sign out and lose these changes". With nothing waiting it explains that the data is safe in the cloud.
 - **Returning user**: when an erase happens the "last downloaded" times for every user are forgotten too. Before, they were kept, so a user who came back would only download changes made since their last visit and miss older records.
 - **Delete account** uses the same erase steps, plus deleting the cloud copy and the account.
+
+## App name and icon
+
+- **Name**: the home screen name is "Pocketlens". It is set with the build setting `INFOPLIST_KEY_CFBundleDisplayName` in both build configurations. The project and target keep the internal name `IosCW`, so nothing else had to be renamed.
+- **Icon** (`Assets.xcassets/AppIcon.appiconset`): a white receipt with a camera-viewfinder frame on a blue gradient, which says "scan a receipt". There are three 1024 by 1024 pictures: the normal one, a darker one for iOS dark mode, and a black and white one that iOS tints for its tinted icon style. iOS rounds the corners itself, so the pictures are square with no transparency. To use a different design, replace those three files and keep the same file names.
