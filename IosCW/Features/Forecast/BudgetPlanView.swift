@@ -5,8 +5,6 @@ struct BudgetPlanView: View {
     @State private var confirming = false
 
     private let month: Date
-    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
-
     init(forecast: NextMonthForecast, container: AppContainer) {
         month = forecast.month
         _viewModel = StateObject(wrappedValue: BudgetPlanViewModel(forecast: forecast,
@@ -18,7 +16,7 @@ struct BudgetPlanView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
+            MasonryLayout {
                 goalCard
                 if !plan.flexibleLines.isEmpty {
                     linesCard(title: "Flexible spending",

@@ -5,14 +5,18 @@ struct ExpenseFormView: View {
     @Environment(\.openURL) private var openURL
     @StateObject private var viewModel: ExpenseFormViewModel
 
-    init(container: AppContainer, editing: Expense? = nil, prefill: ReceiptPrefill? = nil) {
+    init(container: AppContainer,
+         editing: Expense? = nil,
+         prefill: ReceiptPrefill? = nil,
+         type: TransactionType = .expense) {
         _viewModel = StateObject(wrappedValue: ExpenseFormViewModel(
             expenses: container.expenses,
             categories: container.categories,
             rates: container.rates,
             location: container.location,
             editing: editing,
-            prefill: prefill))
+            prefill: prefill,
+            initialType: type))
     }
 
     var body: some View {

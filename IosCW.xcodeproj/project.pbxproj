@@ -9,13 +9,49 @@
 /* Begin PBXBuildFile section */
 		DF4B66B33093865C00FF0E56 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = DF4B66B23093865C00FF0E56 /* FirebaseAuth */; };
 		DF4B66B53093866C00FF0E56 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = DF4B66B43093866C00FF0E56 /* FirebaseFirestore */; };
+		DF77A00100000000000000AE /* PocketlensWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DF77A00100000000000000A1 /* PocketlensWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		DF77A00100000000000000AB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DFAFF9B13088F9E4000255D6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DF77A00100000000000000A4;
+			remoteInfo = PocketlensWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DF77A00100000000000000AD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DF77A00100000000000000AE /* PocketlensWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		DF77A00100000000000000A1 /* PocketlensWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PocketlensWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFAFF9B93088F9E4000255D6 /* IosCW.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IosCW.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		DF77A00100000000000000A2 /* PocketlensWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PocketlensWidget;
+			sourceTree = "<group>";
+		};
+		DF77A00100000000000000A3 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		DFAFF9BB3088F9E4000255D6 /* IosCW */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = IosCW;
@@ -33,6 +69,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DF77A00100000000000000A6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -47,6 +90,8 @@
 			isa = PBXGroup;
 			children = (
 				DFAFF9BB3088F9E4000255D6 /* IosCW */,
+				DF77A00100000000000000A2 /* PocketlensWidget */,
+				DF77A00100000000000000A3 /* Shared */,
 				DF4B66B13093865500FF0E56 /* Frameworks */,
 				DFAFF9BA3088F9E4000255D6 /* Products */,
 			);
@@ -56,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				DFAFF9B93088F9E4000255D6 /* IosCW.app */,
+				DF77A00100000000000000A1 /* PocketlensWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,13 +116,16 @@
 				DFAFF9B53088F9E4000255D6 /* Sources */,
 				DFAFF9B63088F9E4000255D6 /* Frameworks */,
 				DFAFF9B73088F9E4000255D6 /* Resources */,
+				DF77A00100000000000000AD /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DF77A00100000000000000AC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DFAFF9BB3088F9E4000255D6 /* IosCW */,
+				DF77A00100000000000000A3 /* Shared */,
 			);
 			name = IosCW;
 			packageProductDependencies = (
@@ -86,6 +135,29 @@
 			productName = IosCW;
 			productReference = DFAFF9B93088F9E4000255D6 /* IosCW.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DF77A00100000000000000A4 /* PocketlensWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DF77A00100000000000000A8 /* Build configuration list for PBXNativeTarget "PocketlensWidget" */;
+			buildPhases = (
+				DF77A00100000000000000A5 /* Sources */,
+				DF77A00100000000000000A6 /* Frameworks */,
+				DF77A00100000000000000A7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DF77A00100000000000000A2 /* PocketlensWidget */,
+				DF77A00100000000000000A3 /* Shared */,
+			);
+			name = PocketlensWidget;
+			packageProductDependencies = (
+			);
+			productName = PocketlensWidget;
+			productReference = DF77A00100000000000000A1 /* PocketlensWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -97,6 +169,9 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					DF77A00100000000000000A4 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 					DFAFF9B83088F9E4000255D6 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -120,12 +195,20 @@
 			projectRoot = "";
 			targets = (
 				DFAFF9B83088F9E4000255D6 /* IosCW */,
+				DF77A00100000000000000A4 /* PocketlensWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		DFAFF9B73088F9E4000255D6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DF77A00100000000000000A7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -142,7 +225,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DF77A00100000000000000A5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DF77A00100000000000000AC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DF77A00100000000000000A4 /* PocketlensWidget */;
+			targetProxy = DF77A00100000000000000AB /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		DFAFF9C23088F9E6000255D6 /* Debug */ = {
@@ -269,6 +367,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pocketlens.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -299,11 +398,37 @@
 			};
 			name = Debug;
 		};
+		DF77A00100000000000000A9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Pocketlens.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PocketlensWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Pocketlens;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = testdrtive.IosCW.PocketlensWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		DFAFF9C63088F9E6000255D6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pocketlens.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -334,6 +459,31 @@
 			};
 			name = Release;
 		};
+		DF77A00100000000000000AA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Pocketlens.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PocketlensWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Pocketlens;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = testdrtive.IosCW.PocketlensWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -351,6 +501,15 @@
 			buildConfigurations = (
 				DFAFF9C53088F9E6000255D6 /* Debug */,
 				DFAFF9C63088F9E6000255D6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DF77A00100000000000000A8 /* Build configuration list for PBXNativeTarget "PocketlensWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF77A00100000000000000A9 /* Debug */,
+				DF77A00100000000000000AA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

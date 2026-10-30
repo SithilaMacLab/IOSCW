@@ -159,14 +159,14 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 - **BudgetStatus.swift**: moved out of `BudgetMath.swift` so the widget can use the same on track, near limit and over budget rules without needing Core Data. Shared with the widget target.
 - **WidgetSnapshotBuilder.swift**: pure function that builds the summary from plain `ForecastEntry` values and the budget limits, so it can be unit tested. The gauge compares only spending inside budgeted categories with the total of all limits, so spending without a budget does not make it look worse than it is. The expected month-end spending comes from the forecast and is left out when there is not enough history.
 - **WidgetPublisher.swift**: builds the summary and saves it. It runs after every data change (waits 1 second after the last change so a sync of many items refreshes once), when the app opens, when it comes to the foreground, and when the user signs in or out. When nobody is signed in it deletes the summary, so the widget goes back to "Open Pocketlens". The preview and test containers use `NoWidgetPublisher`, so sample data never reaches a real widget.
-- **Widget code** (`WidgetSource/`, outside the app folder so it is not bundled into the app):
+- **Widget code** (`PocketlensWidget/`, the widget target's own folder):
   - `PocketlensWidgetBundle.swift`: the entry point of the widget extension.
   - `PocketlensWidget.swift`: the provider, the views and a sample for previews. Sizes: small (spent, budget bar, status), medium (spent, expected, top 3 budgets), and two Lock Screen sizes (rectangular and circular gauge).
   - Timeline: one entry now and one at the start of next month, refreshed at least hourly. After the month changes, the old summary is no longer shown; the widget asks the user to open the app, because last month's numbers would be wrong.
 - **Privacy**: every amount is marked `privacySensitive()`, so iOS hides it while the phone is locked and on the Lock Screen unless the user allows it. The widget has no Face ID of its own, which is how widgets work on iOS; the proposal asks for a widget that shows spending without opening the app.
 - **Status uses text and an icon as well as colour**, and each block is read by VoiceOver as one item.
 
-### Adding the widget target in Xcode (done by hand on the Mac)
+
 
 1. File, New, Target, Widget Extension. Product name `PocketlensWidget`. Untick Live Activity, Control and Configuration App Intent. Finish. If asked to activate the scheme, press Cancel.
 2. In the file list under `PocketlensWidget`, move the generated `PocketlensWidget.swift` and `PocketlensWidgetBundle.swift` (and any other generated .swift files) to the Trash. Keep the assets and the Info file.
@@ -285,7 +285,7 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 
 ## Testing
 
-- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 131 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
+- **TEST_CASES.md** (project root, not bundled into the app) is the test plan: how to run everything, a 10 minute smoke test, 135 manual test cases with a result column, a results summary and a defect log. Each manual case points to the automated test that covers the same logic.
 - **Unit tests** are in `TestSource/` and need a Unit Testing Bundle target named `IosCWTests`. **UI tests** are in `UITestSource/` and need a UI Testing Bundle target named `IosCWUITests`. Both folders sit outside `IosCW/` so they are not bundled into the app.
 - **UI test mode** (`AppContainer.swift`): launching with `-uitest` makes the app use a local sign-in, an in-memory database, fixed exchange rates and a fixed location, and switches the app lock off, so every UI test starts from a clean state and never touches real data or Firebase. `-uitest-signedin` also skips the sign-in screens. In normal use these flags are never set. The "Load sample data" step in one UI test needs a Debug build.
 - The UI tests drive the iPhone tab bar, so run them on an iPhone simulator.
@@ -307,3 +307,23 @@ The Swift files contain no comments. Everything worth explaining is kept here, g
 
 - **Name**: the home screen name is "Pocketlens". It is set with the build setting `INFOPLIST_KEY_CFBundleDisplayName` in both build configurations. The project and target keep the internal name `IosCW`, so nothing else had to be renamed.
 - **Icon** (`Assets.xcassets/AppIcon.appiconset`): a white receipt with a camera-viewfinder frame on a blue gradient, which says "scan a receipt". There are three 1024 by 1024 pictures: the normal one, a darker one for iOS dark mode, and a black and white one that iOS tints for its tinted icon style. iOS rounds the corners itself, so the pictures are square with no transparency. To use a different design, replace those three files and keep the same file names.
+
+## Add button on the Dashboard
+
+- The Dashboard has a plus button at the top right, next to the sync badge. It opens a menu with "Add expense" and "Add income", and each opens the normal transaction form already set to that type. Choosing income also picks the Salary category, and the user can still change either. When the Dashboard is empty, the same two choices appear as buttons under the "Nothing to show yet" message.
+- `ExpenseFormViewModel` has a new `initialType` parameter and `ExpenseFormView` a matching `type` parameter, so the Activity tab and receipt review behave as before.
+
+## Widget target (already part of the project)
+
+- The Xcode project now contains the widget target `PocketlensWidget` (bundle id `testdrtive.IosCW.PocketlensWidget`), so the widget appears in the Home Screen widget gallery without any manual Xcode steps. It is embedded in the app automatically ("Embed Foundation Extensions") and the app depends on it, so building the app builds the widget.
+- **Folders** (each is a synchronized folder, so files in it are picked up by Xcode by themselves):
+  - `PocketlensWidget/`: the widget's own code (`PocketlensWidget.swift`, `PocketlensWidgetBundle.swift`). Only the widget target compiles it.
+  - `Shared/`: `WidgetSnapshot.swift` and `BudgetStatus.swift`. Both the app and the widget compile these, so there is one copy and no "target membership" ticking.
+- **Files at the project root**: `Pocketlens.entitlements` gives the app and the widget the App Group `group.testdrtive.IosCW` so they can share the spending summary. `PocketlensWidget-Info.plist` tells iOS the extension is a widget.
+- **If signing complains** (for example "provisioning profile doesn't include the application-groups entitlement"): select each target (IosCW and PocketlensWidget), Signing and Capabilities, choose your Team, and make sure App Groups shows `group.testdrtive.IosCW`. Without the App Group the app still works, but the widget cannot read the summary and shows "Open Pocketlens".
+- **To show the widget**: run the app once, sign in, then long press the Home Screen (iPhone) or the iPad Home Screen, tap Edit or the plus, search Pocketlens and add Spending.
+- The project file was edited by hand because the tools here cannot open Xcode. If Xcode ever reports a damaged project, restore it with `git checkout -- IosCW.xcodeproj` and use the fallback steps above.
+
+## Card layout
+
+- The Dashboard, Forecast, Next month and Budget plan screens place their cards with `MasonryLayout` (`Features/Shared/MasonryLayout.swift`): each card goes into whichever column is currently shortest, so the tops line up and there are no ragged gaps, as a plain grid left when cards had different heights. It makes as many columns as fit (at least 340 points each), so it is one column on iPhone and two or more on iPad. The month's Income, Spent and Balance now sit together in one card.

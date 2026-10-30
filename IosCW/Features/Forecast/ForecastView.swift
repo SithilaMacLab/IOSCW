@@ -22,8 +22,6 @@ struct ForecastView: View {
     private let container: AppContainer
     private let sync: SyncEngine
 
-    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
-
     init(container: AppContainer) {
         self.container = container
         sync = container.sync
@@ -54,7 +52,7 @@ struct ForecastView: View {
 
                             switch mode {
                             case .thisMonth:
-                                LazyVGrid(columns: columns, spacing: 16) {
+                                MasonryLayout {
                                     summaryCard(result)
                                     if !viewModel.alerts.isEmpty {
                                         alertsCard

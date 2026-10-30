@@ -8,7 +8,7 @@ This file is not bundled into the app. It lists what to test, how to run the aut
 |---|---|---|---|
 | **Unit tests** (automated) | The logic with no screens: receipt parser, budgets, forecast, next-month model, budget plan, currency, sync rules, CSV, delete account and more | more than 150 | Command-U |
 | **UI tests** (automated) | The real screens, tapped like a user: sign-in screens, tabs, adding a transaction, sample data, forecast and budget plan, sign out | 6 | Command-U |
-| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 131 | By hand, record the result |
+| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 135 | By hand, record the result |
 
 ## 2. How to run the automated tests
 
@@ -142,6 +142,10 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | DASH-03 | Six-month chart | Scroll down | Bars for income and expenses per month | | |
 | DASH-04 | Empty state | New account, no data | "Nothing to show yet" message | | |
 | DASH-05 | Predicted and actual card | With 3 months of data | Expected spending and a progress bar | | |
+| DASH-06 | Plus button | Dashboard, tap the plus at the top right | Menu with Add expense and Add income | | |
+| DASH-07 | Add income from the Dashboard | Plus, Add income, amount, Save | Form opens as Income with Salary chosen. After Save the Income total on the Dashboard goes up. | Unit: ExpenseFormTypeTests.incomeButton | |
+| DASH-08 | Add expense from the Dashboard | Plus, Add expense, amount, Save | Form opens as Expense. After Save the Spent total goes up. | Unit: ExpenseFormTypeTests.expenseButton | |
+| DASH-09 | Empty Dashboard buttons | New account with no data | "Add expense" and "Add income" buttons under the message | | |
 
 ### 4.8 Receipt scanning
 
@@ -279,7 +283,7 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | Search, filter, sort | 4 | | | |
 | Categories | 6 | | | |
 | Budgets | 6 | | | |
-| Dashboard | 5 | | | |
+| Dashboard | 9 | | | |
 | Receipt scanning | 12 | | | |
 | Places and map | 6 | | | |
 | Forecast, this month | 6 | | | |
@@ -289,7 +293,7 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | Widget | 5 | | | |
 | Export and delete | 9 | | | |
 | Look and accessibility | 8 | | | |
-| **Total** | **131** | | | |
+| **Total** | **135** | | | |
 
 Automated: unit tests passed ____ of ____, UI tests passed ____ of 6, on ________ (date).
 

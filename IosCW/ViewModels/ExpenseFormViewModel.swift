@@ -56,7 +56,8 @@ final class ExpenseFormViewModel: ObservableObject {
          rates: ExchangeRateServiceProtocol,
          location: LocationProviding,
          editing: Expense? = nil,
-         prefill: ReceiptPrefill? = nil) {
+         prefill: ReceiptPrefill? = nil,
+         initialType: TransactionType = .expense) {
         repository = expenses
         self.rates = rates
         self.location = location
@@ -105,6 +106,11 @@ final class ExpenseFormViewModel: ObservableObject {
             date = prefill.date
             categoryID = prefill.categoryID
             flagged = prefill.flagged
+        } else {
+            type = initialType
+            if initialType == .income {
+                categoryID = self.categories.first { $0.name == "Salary" }?.id
+            }
         }
     }
 

@@ -4,11 +4,9 @@ struct NextMonthSection: View {
     @ObservedObject var viewModel: NextMonthViewModel
     let container: AppContainer
 
-    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
-
     var body: some View {
         if let forecast = viewModel.forecast {
-            LazyVGrid(columns: columns, spacing: 16) {
+            MasonryLayout {
                 summaryCard(forecast)
                 learningCard(forecast)
                 categoryCard(forecast)

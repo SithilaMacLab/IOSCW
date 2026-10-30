@@ -5,8 +5,7 @@ struct DashboardView: View {
     let container: AppContainer
     @StateObject private var viewModel: DashboardViewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    private let columns = [GridItem(.adaptive(minimum: 340), spacing: 16, alignment: .top)]
+    @State private var addingType: TransactionType?
 
     init(container: AppContainer) {
         self.container = container
@@ -18,7 +17,7 @@ struct DashboardView: View {
             Group {
                 if viewModel.hasAnyTransactions {
                     ScrollView {
-                        LazyVGrid(columns: columns, spacing: 16) {
+                        MasonryLayout {
                             summaryCards
                             forecastCard
                             categoryCard
@@ -29,22 +28,45 @@ struct DashboardView: View {
                     }
                     .background(Color(.systemGroupedBackground))
                 } else {
-                    ContentUnavailableView("Nothing to show yet", systemImage: "chart.pie",
-                                           description: Text("Add a transaction on the Activity tab and your charts will appear here."))
+                    ContentUnavailableView {
+                        Label("Nothing to show yet", systemImage: "chart.pie")
+                    } description: {
+                        Text("Add your first transaction and your charts will appear here.")
+                    } actions: {
+                        Button("Add expense") { addingType = .expense }
+                            .buttonStyle(.borderedProminent)
+                        Button("Add income") { addingType = .income }
+                    }
                 }
             }
             .navigationTitle("Dashboard")
             .syncStatusBadge(container.sync)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            addingType = .expense
+                        } label: {
+                            Label("Add expense", systemImage: "arrow.up.circle")
+                        }
+                        Button {
+                            addingType = .income
+                        } label: {
+                            Label("Add income", systemImage: "arrow.down.circle")
+                        }
+                    } label: {
+                        Label("Add transaction", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(item: $addingType) { type in
+                ExpenseFormView(container: container, type: type)
+            }
         }
     }
 
     private var summaryCards: some View {
-        VStack(spacing: 12) {
-            Text(Date().formatted(.dateTime.month(.wide).year()))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+        ChartCard(title: Date().formatted(.dateTime.month(.wide).year())) {
             let tiles = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(spacing: 12))
                 : AnyLayout(HStackLayout(spacing: 12))
@@ -230,7 +252,7 @@ private struct SummaryTile: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .combine)
     }
 }
