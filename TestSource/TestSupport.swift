@@ -94,9 +94,9 @@ final class FakeAuth: AuthServiceProtocol {
     var reauthError: Error?
     let log: EventLog
 
-    init(userID: String? = "user-1", log: EventLog = EventLog()) {
+    init(userID: String? = "user-1", log: EventLog? = nil) {
         self.userID = userID
-        self.log = log
+        self.log = log ?? EventLog()
     }
 
     var isSignedIn: Bool { userID != nil }
