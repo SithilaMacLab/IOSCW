@@ -8,7 +8,7 @@ This file is not bundled into the app. It lists what to test, how to run the aut
 |---|---|---|---|
 | **Unit tests** (automated) | The logic with no screens: receipt parser, budgets, forecast, next-month model, budget plan, currency, sync rules, CSV, delete account and more | more than 150 | Command-U |
 | **UI tests** (automated) | The real screens, tapped like a user: sign-in screens, tabs, adding a transaction, sample data, forecast and budget plan, sign out | 6 | Command-U |
-| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 137 | By hand, record the result |
+| **Manual test cases** (this file, section 4) | Things only a person can judge, or that need a real iPhone, Firebase or the internet. Many also point to the automated test that covers the same logic. | 149 | By hand, record the result |
 
 ## 2. How to run the automated tests
 
@@ -275,6 +275,23 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | UI-09 | Appearance setting | Settings, Appearance, choose Light, then Dark, then System | Whole app switches at once, including sheets and the sign-in screens. System follows the phone. | Unit: AppearanceModeTests | |
 | UI-10 | Amounts are never cut off | Dashboard with an amount of 150,000 or more, on the smallest iPhone and at a large text size | Income, Spent and Balance show the whole amount (it may shrink) with no "..." | | |
 
+### 4.17 Notifications (real iPhone, or the simulator for the permission screen)
+
+| ID | Test case | Steps | Expected result | Automated | Result |
+|---|---|---|---|---|---|
+| NOTE-01 | Turn notifications on | Settings, Notifications, switch on Allow notifications | iOS asks for permission once. After Allow, four switches and a test button appear. | Unit: NotificationManagerTests.turnOnAllowed | |
+| NOTE-02 | Permission refused | Choose Don't Allow | The switch stays off, a message explains, the Open iOS Settings button works, and coming back refreshes the screen | Unit: NotificationSettingsViewModelTests.switchOnDenied | |
+| NOTE-03 | Test notification | Send a test notification, then go to the Home Screen | A banner "Notifications are on" appears within a few seconds | Unit: NotificationManagerTests.testNotification | |
+| NOTE-04 | Budget almost used | Budget of 10,000 for Food, add expenses until 8,500 is spent | Notification "Food & Dining is at 85% of its monthly limit." More spending in the same month does not repeat it. | Unit: NotificationManagerTests.nearAlertOnce | |
+| NOTE-05 | Over budget | Add more spending to pass the limit | Notification "You have passed your Food & Dining budget this month." once | Unit: NotificationManagerTests.escalation | |
+| NOTE-06 | Forecast warning | Spend more than income after day 7, with 3 months of history | One notification "Spending is running ahead of income" per month | Unit: NotificationManagerTests.forecastWarning | |
+| NOTE-07 | Not too many at once | Load sample data when budgets are already over | At most 3 notifications arrive together | Unit: NotificationManagerTests.cappedAtThree | |
+| NOTE-08 | New month reminder | Switch it on, then set the phone date to the 1st at 9:00 | "A new month has started" arrives. Switching it off removes it. | Unit: NotificationManagerTests.monthlyPlanSwitch | |
+| NOTE-09 | Forgot reminder | Switch it on and add nothing for 3 days (or change the phone date) | "Anything to add?" arrives at 6 pm. Adding a transaction moves it later. | Unit: NotificationRulesTests.reminderThreeDaysLater | |
+| NOTE-10 | Nothing private on the lock screen | Lock the phone when a notification arrives | The text has no money amounts | Unit: NotificationRulesTests.noAmountsInText | |
+| NOTE-11 | Sign out clears them | User A has alerts and signs out, then B signs in | A's pending notifications are gone and B is not told about A's budgets | Unit: NotificationManagerTests.resetOnSignOut | |
+| NOTE-12 | Switch off | Switch Allow notifications off | All pending notifications are cancelled | Unit: NotificationSettingsViewModelTests.switchOff | |
+
 ## 5. Results summary
 
 | Area | Cases | Pass | Fail | N/A |
@@ -295,7 +312,8 @@ Tester: ______________  Device: ______________  iOS version: ________  Build dat
 | Widget | 5 | | | |
 | Export and delete | 9 | | | |
 | Look and accessibility | 10 | | | |
-| **Total** | **137** | | | |
+| Notifications | 12 | | | |
+| **Total** | **149** | | | |
 
 Automated: unit tests passed ____ of ____, UI tests passed ____ of 6, on ________ (date).
 

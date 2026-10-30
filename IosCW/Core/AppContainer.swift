@@ -14,6 +14,7 @@ final class AppContainer {
     let widget: WidgetPublishing
     let accountDeletion: AccountDeleting
     let predictor: NextMonthModelProviding
+    let notifications: NotificationManaging
 
     init(persistence: PersistenceController,
          auth: AuthServiceProtocol,
@@ -23,6 +24,7 @@ final class AppContainer {
          recognizer: TextRecognizing = VisionTextRecognizer(),
          location: LocationProviding = DeviceLocationProvider(),
          publishesWidget: Bool = false,
+         notificationScheduler: NotificationScheduling = NoNotificationScheduler(),
          modelDefaults: UserDefaults = .standard) {
         self.persistence = persistence
         self.auth = auth
@@ -51,6 +53,11 @@ final class AppContainer {
                                                  network: network)
         predictor = NextMonthModelService(expenses: expenses,
                                           store: NextMonthModelStore(defaults: modelDefaults))
+        notifications = NotificationManager(expenses: expenses,
+                                            budgets: budgets,
+                                            scheduler: notificationScheduler,
+                                            store: NotificationSettingsStore(defaults: modelDefaults),
+                                            observesChanges: publishesWidget)
     }
 
     static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uitest")
@@ -60,7 +67,8 @@ final class AppContainer {
         : AppContainer(persistence: .shared,
                        auth: AuthServiceFactory.makeLive(),
                        remote: RemoteStoreFactory.makeLive(),
-                       publishesWidget: true)
+                       publishesWidget: true,
+                       notificationScheduler: SystemNotificationScheduler())
 
     private static func uiTestContainer() -> AppContainer {
         let suite = "pocketlens.uitest"

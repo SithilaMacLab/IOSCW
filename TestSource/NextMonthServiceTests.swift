@@ -11,11 +11,11 @@ struct NextMonthServiceTests {
         let clock: ClockBox
         let service: NextMonthModelService
 
-        init(start: Date = TestClock.date(2026, 11, 15)) {
+        init(start: Date? = nil) {
             let persistence = PersistenceController(inMemory: true)
             let expenses = CoreDataExpenseRepository(persistence: persistence)
             let store = NextMonthModelStore(defaults: isolatedDefaults())
-            let clock = ClockBox(start)
+            let clock = ClockBox(start ?? TestClock.date(2026, 11, 15))
 
             self.expenses = expenses
             self.store = store

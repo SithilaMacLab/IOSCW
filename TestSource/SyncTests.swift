@@ -192,13 +192,13 @@ struct SyncFixture {
         return try #require(expenses.fetchAll().first)
     }
 
-    func makeEngine(remote: RemoteStoreProtocol?, defaults: UserDefaults = isolatedDefaults()) -> SyncEngine {
+    func makeEngine(remote: RemoteStoreProtocol?, defaults: UserDefaults? = nil) -> SyncEngine {
         SyncEngine(persistence: persistence,
                    remote: remote,
                    auth: auth,
                    network: network,
                    categories: categories,
-                   defaults: defaults)
+                   defaults: defaults ?? isolatedDefaults())
     }
 
     func expenseRowCount() throws -> Int {

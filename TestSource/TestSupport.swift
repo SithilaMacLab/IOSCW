@@ -166,3 +166,45 @@ final class ClockBox {
         self.date = date
     }
 }
+
+@MainActor
+final class FakeScheduler: NotificationScheduling {
+    var permissionValue: NotificationPermission = .allowed
+    var requestResult = true
+    private(set) var requestCount = 0
+    private(set) var scheduled: [LocalNotification] = []
+    private(set) var pending: [String: LocalNotification] = [:]
+    private(set) var cancelledIDs: [String] = []
+    private(set) var cancelAllCount = 0
+
+    func permission() async -> NotificationPermission { permissionValue }
+
+    func requestPermission() async -> Bool {
+        requestCount += 1
+        permissionValue = requestResult ? .allowed : .denied
+        return requestResult
+    }
+
+    func schedule(_ notification: LocalNotification) async {
+        scheduled.append(notification)
+        pending[notification.id] = notification
+    }
+
+    func cancel(ids: [String]) async {
+        cancelledIDs.append(contentsOf: ids)
+        for id in ids {
+            pending[id] = nil
+        }
+    }
+
+    func cancelAll() async {
+        cancelAllCount += 1
+        pending = [:]
+    }
+
+    func pendingIDs() async -> [String] { Array(pending.keys) }
+
+    func scheduled(titled title: String) -> [LocalNotification] {
+        scheduled.filter { $0.title == title }
+    }
+}

@@ -51,6 +51,7 @@ struct RootView: View {
             container.sync.sessionChanged()
             container.widget.publish()
             container.predictor.refresh()
+            await container.notifications.refresh()
         }
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
@@ -60,6 +61,7 @@ struct RootView: View {
                 container.sync.appBecameActive()
                 container.widget.publish()
                 container.predictor.refresh()
+                Task { await container.notifications.refresh() }
                 if showsLock {
                     Task { await lock.unlock() }
                 }
@@ -67,10 +69,17 @@ struct RootView: View {
                 break
             }
         }
-        .onChange(of: session.isSignedIn) { _, _ in
+        .onChange(of: session.isSignedIn) { _, signedIn in
             lock.releaseLock()
             container.sync.sessionChanged()
             container.widget.publish()
+            Task {
+                if signedIn {
+                    await container.notifications.refresh()
+                } else {
+                    await container.notifications.reset()
+                }
+            }
         }
     }
 }

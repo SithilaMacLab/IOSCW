@@ -74,6 +74,11 @@ struct SettingsView: View {
                     } label: {
                         Label("Categories", systemImage: "square.grid.2x2")
                     }
+                    NavigationLink {
+                        NotificationSettingsView(container: container)
+                    } label: {
+                        Label("Notifications", systemImage: "bell.badge")
+                    }
                 }
 
                 Section {

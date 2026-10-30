@@ -353,6 +353,7 @@ final class SyncEngine: ObservableObject {
         defaults.removeObject(forKey: lastSyncedKey)
         defaults.removeObject(forKey: NextMonthModelStore.key)
         defaults.removeObject(forKey: BudgetPlanViewModel.rateKey)
+        defaults.removeObject(forKey: NotificationSettingsStore.sentKey)
         lastSyncedAt = nil
         retryDelay = 5
         refreshPending()
